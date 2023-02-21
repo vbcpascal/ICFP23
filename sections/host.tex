@@ -1,0 +1,178 @@
+\section{Meta-Language and Host Languages}
+
+% 介绍元语言的语法和语义，和生成到Haskell的翻译过程
+% 宿主语言需要说我们要的是模块化的语义，即
+
+In this section, we will discuss the syntax and semantic of our meta-language.
+
+\subsection{Meta-Language}
+
+As mentioned above, our meta-language is inspired by Skeleton.
+But it differs in the problems and is therefore adapted.
+Skeleton focuses on illustrating the consistency of concrete and abstract interpretations.
+The meaning of filters (meta-operations in Skeleton) varies in different goals.
+We concentrate on evaluation and typing.
+As an interpretation of Skeleton, it is intuitively close to Haskell.
+For example, instead of branches, we use pattern matching;
+ instead of defining the merging of the interpretation of branches,
+ we will pick the first branch that successfully matches.
+In addition, we support monad at the meta-language level.
+We will show the syntax of the meta-language, 
+ and how the meta-language is translated to Haskell to illustrate its semantics.
+
+\subsubsection{Expressions of Meta-Language}
+Various \textit{expressions} in the meta-language are used to encode the language constructs in the host language or the DSL, such as expressions and types.
+(We use $L$ to refer to a language defined by meta-language like \STLC.
+In the remainder of this section, we will indicate such language with an $L$ to distinguish from the meta-language.
+Also, expressions $\mexp$ in meta-language need to be sperated from expressions in language $L$.)
+
+An expression $\mexp$ is built by \textit{base expressions}, like literals and identifiers, ranged by $\mexp_b$;
+ \textit{expression variables}, ranged by $\mexp_x$;
+ and \textit{compound expressions} by \textit{constructors}, ranged by $c$.
+Each language construct in $L$ corresponds to a constructor $c$ in meta-language.
+To distinguish between various sorts of language constructs,
+ we define $S$ for a finite set of \textit{sorts}, ranged over by $s$.
+A sort $s$ can be either an \textit{base sort} like $\Int$, $\Id$;
+ or a \textit{program sort} like $\Exp$, $\Type$ in \STLC.
+The sort of an expression $\mexp$, written as $sort(\mexp)=s$,
+ illustrate its role in language $L$.
+A constructor $c$ has a signature $sig(c)$, which is of the form $(s_1\cdots s_n)->s$,
+ where $s_1\cdots s_n$ are appropriate sorts of parameters of $c$,
+ and $s$ is the sort of expressions constructed by $c$, briefly stated as sort of $c$.
+A compound expression, written as $c(\mexp_1,\cdots,\mexp_n)$ or $c~\mexp_1\cdots\mexp_n$,
+ is legal, if $sort(\mexp_i)=s_i$ for every $i\in [1,n]$.
+
+\begin{example}
+$λx\!:\<bool>.~e$ in language $L$, is constructor $\<Abs>$ applied to ``x'', $\<bool>$ and expression variable $e$.
+ ``x'' are base expressions, and $sort(``x")=\Id$;
+ $\<bool>$ is constructor $\<Bool>$ applied to nothing.
+The signature of $\<Abs>$ is $sig(\<Abs>)=(\Id,\Type,\Exp)->\Exp$, and its sort is $\Exp$.
+The signature and sort of $\<Bool>$ are both $\Type$.
+\[
+  \begin{array}{ccc}
+    \text{Language } L & & \text{Meta-Language} \\
+    λx\!:\<bool>.~e & \leftrightarrow & \<Abs>(``x",\<Bool>(),e) \text{ or } \<Abs>~``x"~\<Bool>~e
+  \end{array}
+\]
+
+\end{example}
+
+We use $i$ for expressions with sort $\Int$, $x$ for $\Id$, $e$ for $\Exp$, and $t$ for $\Type$.
+A \textit{closed expression} $\cexp$ is an expression with no expression variables, generally refering to a concrete component in language $L$.
+Let $Σ$ be an \textit{environment} mapping from expression variables to expressions. 
+We write $Σ(\mexp)$ to replace all expression variables $\mexp_x\in dom(Σ)$ with $Σ(\mexp_x)$ in $\mexp$.
+An environment $Σ$ is \textit{closed} for expression $\mexp$, when $Σ(\mexp)$ is a closed expression.
+
+\subsubsection{Rules of Meta-Language}
+
+\begin{figure}
+  \begin{align*}
+    d \in Body 
+      & ::= b  \\
+      & \quad \mid b:(br_1\cdots br_n) & \text{(Pattern Matching)} \\
+      & \quad \mid \Let{pat}{b_1} b_2 & \text{(Let Binding)} \\
+    b \in Bone
+      & ::= exp' & \text{(General Expression)} \\
+      & \quad \mid h(exp') & \text{(Recursive Computation)} \\
+      % & \quad \mid H(e_1[e_2/x]) & \text{(Recursive Computation with Substitution)} \\
+      & \quad \mid f_m(exp'_1\cdots exp'_n) & \text{(Monadic Meta-function)} \\
+    exp' \in \Exp_G
+      & ::= exp & \text{(Expression)} \\
+      & \quad \mid f_p(exp'_1\cdots exp'_n) & \text{(Pure Meta-function)} \\
+    br \in Branch
+      & ::= pat |> b \\
+      & \quad \mid exp' |> b \\
+    pat \in \mathit{Pattern}
+      & ::= exp_x & \text{(Expression Variable)} \\
+      & \quad \mid c~pat_1\cdots pat_n & \text{(Compound Pattern)}
+  \end{align*}
+\caption{Body of Rules in Meta-Language}
+\label{fig:body}
+\end{figure}
+
+A rule of meta-language has the shape $h(c~\mexp_{x_1}\cdots \mexp_{x_n}) \cqq d$, 
+ where $h$ is the name of interpretation like $\mathcal{E}$ and $\mathcal{T}$,
+ $c$ is a constructor, 
+ $\mexp_{x_1}\cdots \mexp_{x_n}$ are expression variables,
+ and $d$ is the rule body.
+An interpretation $h$ has a signature $sig(h)=s_1->m~s_2$, 
+ where $s_1$ states for which $h$ computes,
+ and $s_2$ states for the result of $h$,
+ $m$ is the monad for side-effects.
+When no side effects are introduced, $m$ can be omitted.
+A body is composed of bones, shown in Fig. \ref{fig:body}.
+A bone, which represents an operation, 
+ can be either a general expression, 
+ a recursive computation,
+ or a meta-function.
+
+General expressions are expressions $\mexp$ or computation of expressions with $f_p$.
+Two types of meta-functions are mentioned here:
+ monadic meta-functions, ranged over by $f_m$,
+ pure meta-functions, ranged over by $f_p$.
+% They are the same if computation is pure.
+% But when monad is introduced, 
+When monad is introduced,
+ $f_m$ is function containing side effects, 
+  whose signature is like $sig(f_m)=(s_1\cdots s_n)->m~s$;
+ while $f_p$ is not,
+  whose signature is of the form $sig(f_p)=(s_1\cdots s_n)->s$.
+Most of these functions are pre-defined.
+For example, $searchCtx$, $updateCtx$ and $restoreCtx$ are monadic meta-functions,
+ equality checking $(=)$ and substitution are pure meta-functions.
+Interestingly, as the result, the use of monad in the body of rules is implicit,
+ where $return$ or $bind$ need not be written explicitly.
+
+\subsubsection{Language $L$ Defined in Meta-Language}
+A \textit{Language} $L$ consists of a set of program sorts $S_p$;
+ a set of language constructs $C$ with signatures;
+ a set of interpretations $H$ with rules;
+ a set of meta-functions $F$, seprerated by monadic ones $F_m$ and pure ones $F_p$.
+In particular, in \STLC and its extensions, $S_p=\{\Exp,\Type\}$.
+$H$ can be seperated into a set of evaluation rules $R_{\mE}$ and a set of typing rules $R_{\mT}$,
+ where $sig(\mE)=\Exp->m_1~\mE$ and $sig(\mT)=\Exp->m_2~\mT$.
+Substitution, as a pure meta-function, is divided from $F_p$ and described as a set of substitution rules $R_{subst}$,
+ whose definition is defined by develops.
+\[ L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F_p, F_m \rangle \]
+% Fig. shows an example of STLC definition in our meta-language.
+
+% \begin{figure}
+%   \begin{align*}
+%     S_p & = \{ \Exp, \Type \} \\
+%     H & = \{ \mathcal{E}: \Exp->\Exp, \mathcal{T}: \Exp->State~CtxStack~\Type \} \\
+%     F_m & = \{ searchCtx, updateCtx, restoreCtx \} \\
+%     F_p & = \{ (=), subst \}
+%   \end{align*}
+% \end{figure}
+
+\subsubsection{Code Generation.}
+
+
+\subsection{Host Languages}
+
+Our host language is designed to define DSL.
+For the purpose of semantic derivation, 
+ each language constructs of the host language should have a structural computation.
+ the evaluation of an expression $c~e_1\cdots e_n: \Exp$ should be an operation of the evaluation of each subexpression $e_i$ if $e_i:\Exp$.
+If some $e_i$ is used without evaluation, 
+ or some expression being computed is not $e_i$,
+ then the rule is not structural.
+The evaluation rules of $\<if>$ and $\<and>$ are structural.
+Structural evaluation rules are the key to ensure the abstraction in semantic derivation.
+In other words, any language construct with unstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic derivation.
+
+In the case of STLC, the evaluation rules of lambda abstraction and application are not structural.
+The former uses the $e_i$ not evaluated, 
+ while the latter evaluates an expression containing substitution.
+We rewrite these two rules according to the meta-language definition above as follows, 
+ where $subst \in F_p$:
+% weak alert
+\newcommand{\wkalt}[1]{\colorbox{lightgray}{#1}}
+\begin{align*}
+  \EE{\<Abs>~x~t~e} & \cqq \<Abs>~x~t~\wkalt{$e$} \\
+  \EE{\<App>~e_1~e_2} & \cqq \Let{\<Abs>~x~t~e}{\EE{e_1}} \Let{v_2}{\EE{e_2}} \wkalt{$\EE{subst~e~x~v_2}$}.
+\end{align*}
+
+\todo{Safety? cannot be expressed by big-step semantics}
+
+

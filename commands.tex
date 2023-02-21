@@ -1,0 +1,83 @@
+% Comments
+\newcommand{\mycomment}[2]{{\small\color{magenta}\underline{\sf{#1}}:} {\color{magenta}{\small #2}}}
+\newcommand{\todo}[1]{\mycomment{Todo}{#1}}
+\newcommand{\gcmt}[1]{\mycomment{Guan}{#1}}
+
+% Shorthand
+\newcommand{\Da}{\Downarrow}
+
+% Unicode char
+\usepackage{newunicodechar}
+\newunicodechar{λ}{\lambda}
+\newunicodechar{Σ}{\Sigma}
+
+% Semantics and reserved words
+\mathchardef\mhyphen="2D
+\usepackage[inference,ligature,reserved,shorthand]{semantic}
+\reservestyle[\mathinner]{\command}{\mathit}
+\command{let, in}
+\command{true, false, bool, int}
+\command{pair, fst, snd}
+\command{and, or, not, nand, nor, xor}
+\command{if, then, else}
+\command{andf[and_f], andfp[and_f']}
+\command{halfa[half\mhyphen adder], fulla[full\mhyphen adder]}
+
+\reservestyle[\mathinner]{\Constructor}{\mathbf}
+\Constructor{Bool, True, False}
+\Constructor{Int, Lit, Plus, Eq, Lt}
+\Constructor{Abs, App, Loc, Ref}
+
+% Macro for Osazone semantics
+\NewDocumentCommand{\branch}{ >{\SplitList{&}} m }{%
+  \left(\begin{aligned} %
+      \ProcessList{#1}{\brfunc}%
+    \end{aligned}\right)%
+}
+
+\NewDocumentCommand{\brfunc}{m}{%
+  & #1%
+}
+
+\newcommand{\lt}{\mathbf{let}}
+\newcommand{\monad}{\mathbf{monad}~}
+\newcommand{\as}{~\mathbf{as}~}
+
+\newcommand{\Let}[2]{\lt~#1=#2;~}
+
+\newcommand{\Exp}{\mathit{Exp}}
+\newcommand{\Type}{\mathit{Type}}
+\newcommand{\Id}{\mathit{Id}}
+\newcommand{\Int}{\mathit{Int}}
+\newcommand{\newLoc}{\mathit{newLoc}}
+\newcommand{\store}{\mathit{store}}
+\newcommand{\fetch}{\mathit{fetch}}
+\newcommand{\return}{\mathit{return}}
+
+\newcommand{\cqq}{\coloneqq}
+\newcommand{\EE}[1]{\mathcal{E}(#1)}
+\newcommand{\EEL}[1]{\mathcal{E}_{L}(#1)}
+\newcommand{\EELL}[1]{\mathcal{E}_{L'}(#1)}
+\newcommand{\TT}[1]{\mathcal{T}(#1)}
+\newcommand{\TTL}[1]{\mathcal{T}_{L}(#1)}
+\newcommand{\TTLL}[1]{\mathcal{T}_{L'}(#1)}
+
+\mathlig{|>}{\triangleright}
+
+\newcommand{\lifted}[1]{#1^\uparrow}
+\newcommand{\ds}{\mathbb{D}_1}
+\newcommand{\DS}{\mathbb{D}}
+\newcommand{\dd}{C}
+\newcommand{\dhl}[1]{\underline{\dd(#1)}}
+
+\AtEndPreamble{%
+\theoremstyle{acmdefinition}
+\newtheorem{requirement}[theorem]{Requirement}}
+
+\newcommand{\mE}{\mathcal{E}}
+\newcommand{\mT}{\mathcal{T}}
+
+\newcommand{\mexp}{\varepsilon}
+\newcommand{\cexp}{\widetilde{\varepsilon}}
+
+\newcommand{\STLC}{\textsc{STLC}}

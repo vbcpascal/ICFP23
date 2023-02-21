@@ -1,3 +1,119 @@
 \section{Introduction}
 
+Language-oriented programming (LOP)\cite{LOP} is solving a class of problems by designing one or more new domain-specific languages (DSLs).
+To avoid building common languages constructs like loops and branches,
+developers may implement DSLs on top of another general-purpose programming language (called host language).
+Developers can extend the host language based on the language features, rendering programs with domain-specific forms.
+Languages with features like macros and higher-order functions are frequently employed.
+By specifying translation rules from the DSL to the host language, developers can obtain a DSL interpreter naturally.
+This type of DSL is called embedded DSL (eDSL).
 
+Despite eDSL can significantly reduce implementation costs, DSL users find it inconvenient due to the inevitable need to learn the host language and understand error messages.
+This is called abstraction leakage, where the users writes a program in DSL and it is translated into the host language,
+causing the program executed formally differently from the original program.
+Much prior work has focused on how to translate information from the host language to the DSL users manually.
+\todo{More related work about generate information manually}
+
+Pombrio et al. \cite{resugar} have made a great progress in maintenance of abstraction automatically.
+They proposed \textit{resugaring}, by selectively reorganizing the sequence of evaluations on the host language to the DSL according to the reverse translation rules.
+But there are several practical problems in this approach.
+First, programs with a lot of syntactic sugars are pretty expensive to check whether each term in the evaluation sequences can be resugared.
+Second, it still contains a host language evaluator executing,
+so that users cannot intuit the functionality of language constructs.
+Yang et al. \cite{lazy-desg} have solved the first problem via lazy desugaring.
+
+% In this paper, we will focus on the second problem.
+% In this paper, we propose a new approach to implementing DSLs by translation rules but make it standalone.
+
+In general, embedded DSLs treat the host language as a black box.
+We take the semantics of the host language as a white box, written by the meta language,
+and derive the semantics for language constructs of DSL automatically.
+
+We follow the core ideas of inferring type rules for syntactic sugars \cite{infer-types} and extend it to the semantics.
+For example, in a host language with lambda abstraction and application, we can define $\<let>$ by translation rule:
+\[ e_1~\<and>~e_2 => \<if>~e_1~\<then>~e_2~\<else>~\<false>. \]
+The derivation of $\<and>$ is given in Fig. \ref{fig:and}.
+In DSL, an expression matching the pattern of left-hand side (LHS) evaluates to $v$, if and only if the right-hand side (RHS) evaluates to $v$ (Step 1).
+Based on the rules of if-then-else, we can futher expand the evaluation of RHS.
+Since if-then-else is described in two rules according to the evaluation of $e_1$,
+our derivation tree have to do the same thing (Step 2).
+Similarly, the rule of $\<false>$ can be applied (Step 3).
+Hence, we can obtain the following conclutions:
+\[
+  \inference{e_1 \Da \<true> & e_2 \Da v}
+  {e_1~\<and>~e_2 \Da v}
+  \qquad
+  \inference{e_1 \Da \<false>}
+  {e_1~\<and>~e_2 \Da \<false>}
+\]
+It should be observed that without mentioning $\<if>$, the rules directly describe the rules of $\<and>$.
+That means, the abstraction we want to maintain --- that the rules of $\<and>$ are independent of the host language --- is true.
+
+\begin{figure}[t!]
+  \[
+    \inference[(Step 1) ]{%
+      \inference[(Step 2) ]{%
+        e_1 \Da \<true>
+        & e_2 \Da v
+      }
+      {\<if>~e_1~\<then>~e_2~\<else>~\<false> \Da v}
+    }
+    {e_1~\<and>~e_2 \Da v}
+    \qquad
+    \inference[(Step 1) ]{%
+      \inference[(Step 2) ]{%
+        e_1 \Da \<false>
+        & \inference[(Step 3)]{}{\<false> \Da \<false>}
+      }
+      {\<if>~e_1~\<then>~e_2~\<else>~\<false> \Da \<false>}
+    }
+    {e_1~\<and>~e_2 \Da \<false>}
+  \]
+  \caption{Derivation of $\mathbf{and}$}
+  \label{fig:and}
+\end{figure}
+
+It is seemingly natural but we are facing three challenges:
+(1) Unlike type rules, which can typically be stated by one single rule,
+many evaluation rules, such as $\<if>$, do not conform this property.
+This may lead to nondeterminacy when searching rules or exponential growth in the number of rules.
+(2) Most type rules are defined in a modular way,
+which means the type of an expression depends on the types of subexpressions,
+but the semantics may be not.
+In particular, when using lambda-calculus as the host language,
+lambda abstraction itself is a value.
+Translation rules defined by lambda abstraction, is a value itself.
+The evaluation rules of them may ruin the abstraction, like
+\[ \<andf> => λx:\<bool>,y:\<bool>.~\<if>~x~\<then>~y~\<else>~\<false>. \]
+(3) Since the rules of application include substitution,
+we must specify the behavior of the expression containing substitution in semantic derivation.
+
+To address challenge (1),
+we introduce a variant of Skeleton \cite{skeleton} as meta-language to describe semantics.
+Make sure that each language structure is evaluated according to unique rules,
+in order to guarantee the determinacy of semantic derivation.
+To address challenge (2),
+we propose lambda lifting, to reveal the semantics of lambda abstraction.
+To address challenge (3),
+we show that substitution can maintain the correctness and abstraction of semantic derivation,
+but we shall impose greater limitations on translation rules.
+
+In this paper, we propose a new framework for DSL design.
+We use simply-typed lambda-calculus (STLC) as the host language for its elementariness and versatility.
+To increase the generality of the framework,
+we provide meta-extensions (to introduce new vocabularies) and monad-extensions (to introduce side-effects) on the host language.
+Then, users can specify DSL constructs by translation rules on the new extended host language.
+Hence, as the focus of this paper, the framework will derive the evaluation rules and type rules for these constructs automatically, to make the DSL standalone.
+All the semantics are described by the meta-language, and those of DSLs are generated.
+Finally and naturally, our framework will generate interpreters based on semantics.
+Our main technical contributions can be summarized as follows:
+
+\begin{itemize}
+  \item \todo{host}
+  \item \todo{dsl}
+  \item We present an algorithm to derive semantics for DSL constructs defined by translation rules.
+        For the translation rules defined with lambda abstraction,
+        we will give the lambda-lifting method.
+        We will prove the correctness and abstraction of the algorithm.
+  \item We give an implementation of the framework.
+\end{itemize}

@@ -1,0 +1,206 @@
+\section{DSL Definition}
+
+In this section, language extensions and language specialization will be discussed in more detail.
+
+\subsection{Meta-Extensions}
+
+Meta-extensions are direct extensions to the host language by
+ adding new constructors $C_n$ and corresponding rules, and functions $F_n$.
+This expansion has the following requirements: for each $c \in C_n$,
+ (1) $sort(c) \in S_p$, i.e. $\Exp$ or $\Type$;
+ (2) if $sort(c)=\Exp$, then the evaluation, typing and substitution rules should be specified.
+%  (3) if there exists $e_1\cdots e_n$ such that $c~e_1\cdots c_n$,  
+
+\paragraph{Example: integer extension.}
+Consider integers are expected to be supported via literals.
+New constructors, $\<Int>$ as $\Type$, $\<Lit>$, $\<Plus>$, $\<Lt>$ and $\<Eq>$ as $\Exp$, will be added.
+Fig. \ref{fig:int} shows the formal definition of integer extension, 
+ where $F_n=\{(+),(<)\}$, both of them are pure meta-functions.
+\todo{function Substitution will be modified after adding new constructors}
+
+\begin{figure}
+  \begin{align*}
+    & \<Int>:\Type \\ 
+    & \<Lit>:\Int->\Exp & 
+    & \EE{\<Lit>~i} \cqq \<Lit>~i \hspace{5em} \TT{\<Lit>~i} \cqq \<Int> \\
+    & & & (\<Lit>~i)[e/x] = \<Lit>~i \\
+    & \<Plus>:(\Exp,\Exp)->\Exp &
+    & \EE{\<Plus>~e_1~e_2} \cqq \Let{\<Lit>~i_1}{\EE{e_1}} \Let{\<Lit>~i_2}{\EE{e_2}} \<Lit>~(i_1+i_2) \\
+    & & & \TT{\<Plus>~e_1~e_2} \cqq \Let{\<Int>}{\TT{e_1}} \Let{\<Int>}{\TT{e_2}} \<Int> \\
+    & & & (\<Plus>~e_1~e_2)[e/x]=\<Plus>~e_1[e/x]~e_2[e/x] \\
+    & \<Lt>:(\Exp,\Exp)->\Exp &
+    & \EE{\<Lt>~e_1~e_2} \cqq \Let{\<Lit>~i_1}{\EE{e_1}} \EE{e_2}:\branch{
+        \<Lit>~i_2 \mid i_1 < i_2 |> \<True> \\&
+        \<Lit>~\_ |> \<False> 
+      } \\
+    & & & \TT{\<Lt>~e_1~e_2} \cqq \Let{\<Int>}{\TT{e_1}} \Let{\<Int>}{\TT{e_2}} \<Bool> \\
+    & & & (\<Lt>~e_1~e_2)[e/x]=\<Lt>~e_1[e/x]~e_2[e/x] \\
+    & \<Eq>:(\Exp,\Exp)->\Exp &
+    & \EE{\<Eq>~e_1~e_2} \cqq \Let{\<Lit>~i_1}{\EE{e_1}} \EE{e_2}:\branch{
+        \<Lit>~i_2 \mid i_1 = i_2 |> \<True> \\&
+        \<Lit>~\_ |> \<False> 
+      } \\
+    & & & \TT{\<Eq>~e_1~e_2} \cqq \Let{\<Int>}{\TT{e_1}} \Let{\<Int>}{\TT{e_2}} \<Bool> \\
+    & & & (\<Eq>~e_1~e_2)[e/x]=\<Eq>~e_1[e/x]~e_2[e/x] \\
+  \end{align*}
+  \caption{Formal Definition of Integer Extension}
+  \label{fig:int}
+\end{figure}
+
+\subsection{Monad Extensions}
+
+As it was mentioned above, monad extension is the technique for side effects in computation without changing the original semantic definition.
+By monad $m$, individual language features can be defined, such as environment, store, nondeterminism, I/O etc.
+To put these together in a modular way, we use a mechanism called \textit{monad transformers}, ranged by $m_t$.
+In this section, we will show the introduction of reference to STLC.
+Both the change of pure functions to those including computational effects via monad (in evaluation) and the expansion of language features via monad transformer (in typing) will be explained.
+
+\subsubsection{Evaluation with Store}
+Monad extensions are often accompanied by meta-extensions. 
+The basic language constructs for reference are allocation, dereferencing and assignment.
+For reading convenience, we use expression with syntax like $ref~e$, $!e$ and $e_1:=e_2$.
+To carry through the modification on store, 
+ the signature of $\mathcal{E}$ changes from $\Exp->\Exp$,
+ to $\Exp->(\mathit{State~Store})~\Exp$, abbreviated as $M_e~\Exp$,
+ where $\mathit{Store}$ maps locations to values.
+\[ \mathcal{E} : \Exp -> \Exp ~\wkalt{$\monad \mathit{State~Store} \as M_e$} \]
+An abstract index of store is a location (used as a base sort $Loc$).
+A reference will be evaluated to a location expression, constructed by $\<Loc>:Loc->\Exp$.
+New (monadic) meta-functions are also necessary for evaluation rules:
+\begin{itemize}
+  \item $\newLoc:M_e~Loc$ returns a newly allocated location;
+  \item $\store:(Loc,\Exp)->M_e~()$ updates the store to make the location contain the value;
+  \item $\fetch:Loc->M_e~\Exp$ gets the value at the location from the store.
+\end{itemize}
+Given these meta-functions, Fig. \ref{fig:ref_eval} shows the evaluation rules of these newly defined language constructs.
+
+\begin{figure}
+  \begin{align*}
+    \EE{\<Loc>~loc} & \cqq \<Loc>~loc \\
+    \EE{ref~e} & \cqq \Let{v}{\EE{e}} \Let{loc}{\newLoc} \<Loc>~loc \\
+    \EE{!e} & \cqq \Let{\<Loc>~loc}{\EE{e}} \fetch~loc \\
+    \EE{e_1:=e_2} & \cqq \Let{\<Loc>~loc}{\EE{e}} \Let{v_2}{\EE{e_2}} \Let{()}{\store~(loc,v)} ()
+  \end{align*}
+  \caption{Evaluation Rules of \textsc{Ref}}
+  \label{fig:ref_eval}
+\end{figure}
+
+When introducing monad, pure meta-functions keep the original definition, 
+ while monadic meta-functions $f_m:(s_1\cdots s_n)->s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->m~s$ for type correctness, defined by:
+\[ \lifted{f_m}~args = \return~(f_m~args). \]
+
+\subsubsection{Typing with Store}
+If the content of a location has type $t$, then the type of the location is $Ref~t$,
+ introducing new constructor $\<Ref>:\Type->\Type$.
+To extend the store typing which records the association between location and their types,
+ the signature of $\mathcal{T}$ changes from $\Exp->State~CtxStack~\Type$,
+ to $\Exp->\mathit{ReaderT}~Store_t~(State~CtxStack)~\Type$,
+ where $Store_t$ maps locations to types,
+ and $ReaderT~Store_t$ is a monad transformer.
+\[ \mathcal{T} : \Exp -> \Type ~\monad \mathit{State~CtxStack}, \wkalt{$\mathit{Reader~Store}_t$} \as M_t \]
+Monad transformers allow us touch high-level language features, but skill keep the access to low-level details.
+Now, for example, we can use both the meta-functions associated with store typing like $ask$ and the meta-functions provided by Context like $searchCtx$.
+Fig. \ref{fig:ref_type} gives the typing rules of language constructs in \textsc{Ref}.
+
+\begin{figure}
+  \begin{align*}
+    \TT{\<Loc>~loc} & \cqq \Let{t}{ask~loc} Ref~t \\
+    \TT{ref~e} & \cqq \Let{t}{\TT{e}} Ref~t \\
+    \TT{!e} & \cqq \Let{Ref~t}{\TT{e}} t \\
+    \TT{e_1:=e_2} & \cqq \Let{Ref~t}{\TT{e_1}} \TT{e_2}:(t_2 \mid t = t_2 |> Unit)
+  \end{align*}
+  \caption{Typing Rules of \textsc{Ref}}
+  \label{fig:ref_type}
+\end{figure}
+
+Likewise, pure meta-functions remains unchanged,
+ and all the monadic meta-functions $f_m:(s_1\cdots s_n)->m~s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->(m_t~m)~s$ by $\mathit{lift}$ operation\cite{todo},
+ so that the type rule of lambda abstraction in \textsc{Ref} will be written as:
+
+\begin{align*}
+  \TT{λx:t.e}   & \cqq \lt~\_=\lifted{updateCtx}~x~t;~\lt~t'=\TT{e}; \\
+                & \hspace{13pt} \lt~\_=\lifted{restoreCtx};~t->t'.
+\end{align*}
+
+\subsection{Translation Rules}
+
+After defining a fully featured host language,
+ translation rules are designed to specialize the language constructs of the DSL.
+The difference between a translation rule and a macro is that it is not provided by the host language, 
+ but is an abstraction outside the language.
+The distinction between translation rules and syntactic sugar is that it not only simplifies the syntax, 
+ but also can be used to describe more operations.
+
+A translation rule $tr$ define a new constructor in meta-language,
+ with shape 
+\[ c_s~exp_{x_1}\cdots exp_{x_n} => exp_r, \]
+ where expression variables in $exp_r$ must appear in LHS.
+We use $LHS(tr)$ to express LHS, and $RHS(tr)=exp_r$ to express RHS.
+We call constructors defined by translation rules \textit{surface constructor}.
+If a closed expression $exp$ is constructed by $c_s$, 
+ then there exists an environment $Σ$ satisfying $Σ(LHS(tr))=exp$,
+ and $Σ(RHS(tr))$ is called \textit{one-step translation} (or desugaring), 
+ written as $\ds(exp)$.
+\textit{Total translation} is also pretty useful, 
+ which expands the rules recursively. 
+But if a rule translates to a constructor defined by itself, 
+ i.e., a recursive translation rule, 
+ then total translation is not terminated.
+Therefore, we propose the following requirement.
+
+\begin{requirement}\label{req:no-recursion}
+For a translation rule $tr$, constructors in $RHS(tr)$ must be those of host language, or surface constructors defined earlier.
+\end{requirement}
+
+Formally, a total translation of expression $\DS(exp)$ is defined as:
+\begin{align*}
+  \DS(exp_b) & = exp_b \\
+  \DS(c_s~exp_1\cdots exp_n) & = \DS(\ds(c_s~exp_1\cdots exp_n)) & \text{if $c_s$ is a surface constructor} \\
+  \DS(c_h~exp_1\cdots exp_n) & = c_h~\DS(exp_1)\cdots\DS(exp_n) & \text{if $c_h$ is a host constructor} 
+\end{align*}
+
+For example, given an expression $\<true>~\<and>~(\<false>~\<or>~\<true>)$ of \textsc{Bool}, then:
+\begin{align*}
+  \ds(\<true>~\<and>~(\<false>~\<or>~\<true>)) & = 
+    \<if>~\<true>~(\<false>~\<or>~\<true>)~\<false> \\
+  \DS(\<true>~\<and>~(\<false>~\<or>~\<true>)) & = 
+    \<if>~\<true>~(\<if>~\<false>~\<true>~\<true>)~\<false>
+\end{align*}
+
+\subsubsection{Variable Scope in Translation Rules}
+
+We have very strict requirements for the scope of variables in the translation rules.
+Variables defined in the rule cannot be leaked,
+ and external variables may not be captured in the rule.
+These translation rules are not premitted:
+\begin{align*}
+  \mathit{leaked}~e & => \<let>~x:\<int> =1~\<in>~e \\
+  \mathit{captured}~e & => \<if>~x~\<true>~e 
+\end{align*}
+The former tries to bind a constant in $x$ for use in e, like $\mathit{leaked}~(x+1)$;
+and the latter attempts to get the value of $x$ in the current environment, like $\<let>~x=\<true>~\<in>~\mathit{captured}~\<false>$.
+From the user's point of view, it is weird to use variables that are not explicitly defined and use variables but not explicitly stated.
+And in the semantic derivation, the variables that are not substituted will be stuck.
+Taking all these considerations into account, we give the following requirements.
+
+\begin{requirement}\label{req:close}
+  A translation rule must be \textit{closed}: any variable used in RHS has a local binding.
+\end{requirement}
+
+\subsubsection{Hygiene Problem}
+
+Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
+ variable bindings are possible to be hidden by macros, which we also have to face.
+For example, we define a translation rule $or'$ via $\<let>$:
+\[ e_1~or'~e_2 => \<let>~``x"=e_1~\<in>~\<if>~``x"~``x"~e_2 \]
+where $``x"$ is a literal identifier. 
+Then the expression $\<let>~x=\<false>~\<in>~(\<true>~or'~x)$ will be totally translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
+Fortunately, thanks to the requirement \ref{req:close}, the variables in the RHS must be locally bound. 
+Therefore, we can modify the names of variables safely.
+\textit{We treat literals variables bound in the RHS as mutable and always fresh.}
+We use $@$ to denote fresh variables, and $or'$ will be written as:
+\[ e_1~or'~e_2 => \<let>~@x=e_1~\<in>~\<if>~@x~@x~e_2. \]
+
+\subsubsection{Substitution Rules}
+
+

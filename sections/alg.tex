@@ -1,0 +1,150 @@
+\section{Language Lifting}
+
+Language lifting is the method for generating a stondalone DSL from an extended host language and translation rules.
+Ignoring the modification of the syntax, we will present how to derive computation rules and type rules.
+In particular, we will discuss language lifting for those whose host language is STLC or extended STLC.
+
+\subsection{Preprocessing: Lambda Lifting}
+
+We have already exemplified how lambda abstractions break the abstraction property in semantic derivation.
+The solution to this problem is to expose the lambda abstractions in the translation rules 
+ and define them as new language constructs of the DSL.
+For the outermost lambda abstractions, the transformation is straightforward. 
+The inner lambda abstractions, on the other hand, need to be extracted recursively.
+The challenge here is to ensure that the translation rules are closed.
+Formally, for the translation rule $tr$ which defines $c_n'$:
+\newcommand{\laml}[1]{\uparrow_λ\!\!(#1)}
+\begin{align}
+  \laml{(λx:t.e_1)~e_2} & = (λx:t.\laml{e_1})~\laml{e_2} \label{ll:let} \\
+  \laml{λx:t.e} & = λx:t.(c_n'~\exp_1..\exp_p ~ x_1..x_q) \\[-3pt]
+    & \text{generating } c_n'~\exp_1..\exp_p ~ e_1..e_q => \laml{e[e_1/x_1..e_q/x_q]} \\[-3pt]
+    & \text{for each expression variable } \exp_i \text{ in } e \text{ and variable } x_j \text{ not bound in } e \\
+  \laml{c~exp_1\cdots exp_n} & = c~\laml{exp_1}\cdots\laml{exp_n} \\
+  \laml{exp_x} & = exp_x \\
+  \laml{exp_b} & = exp_b
+\end{align}
+where $\laml{\bullet}$ is lambda lifting transformation, with the generation of some translation rules.
+The first rule states that if a lambda abstraction is applied directly in the translation rule, 
+ then it does not need to be lifted because it does not break the abstraction (which can essentially be written as a $\<let>$).
+The second is the main rule, which generates a new constructor $c_n'$ to describe the semantics of a lambda abstraction.
+Any expression variables of $LHS(tr)$ used in $e$ (i.e., parameters of $c_n$) need to be applied by $c_n'$.
+In addition, any variable $x_j$ which have been bound and captured by $e$ are also required to be included,
+ by an new expression variable $e_j$, which ensures the closure of translation rules.
+Note that the newly generated $c_n'$ needs to process lambda lifting recursively,
+ and may generate some more translation rules.
+
+\todo{examples}
+
+\begin{lemma}
+  Lambda lifting preserves requirements \ref{req:no-recursion} and \ref{req:close}.
+\end{lemma}
+
+\subsection{Semantic Derivation}
+
+In order for the DSL to support new language constructs defined by translation rules, 
+ it is necessary to provide their evaluation rules and type rules.
+In this section, a generic algorithm will be presented, 
+ to illustrate how to derive the rules for translation rules.
+For a DSL defined by multiple translation rules, 
+ we derive the evaluation and typing rules and add them to the language individually.
+
+% And now we will give the algorithm of semantic derivation. 
+Suppose a host language based on STLC is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
+where $S_p=\{\Exp,\Type\}$,
+and a translation rule $tr$ has shape $c_n~exp_1\cdots exp_n => e$,
+where $sort(c_n)=\Exp$ and $tr$ satisfies the requirements.
+Let $L'=\langle S_p, C', R'_{\mE}, R'_{\mT}, R'_{subst}, F\rangle$ be the new language that supports $c_n$ (i.e., $C'=C \cup \{c_n\}$).
+
+\subsubsection{Algorithm}
+
+In overview, the core idea of the semantic derivation has been shown: 
+ expand expressions evaluation recursively according to the rules in $L$ 
+ until all the evaluation are unexpandable.
+Formally, $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$, the definition of $\dd$ is shown in Fig. \ref{fig:sd}.
+
+\begin{figure}
+  $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$
+  \begin{align}
+    \noalign{\raggedright \hspace{4em} Body:}
+    \dd(b:(br_1\cdots br_n)) & = \dd(b):(\dd(br_1)\cdots \dd(br_n)) \\
+    \dd(\Let{pat}{b_1} b_2) & = \Let{pat}{\dd(b_1)} \dd(b_2) \\
+    \noalign{\raggedright \hspace{4em} Bone:}
+    \dd(\EE{exp_x}) & = \EE{exp_x} \\  
+    \dd(\EE{exp_b}) & = \EE{exp_b} \\
+    \dd(\EE{c~exp_1\cdots exp_m}) 
+      & = \dd(Σ(d)) \hspace{20pt} \text{if there exists $Σ$ and $\EE{exp}\cqq d$,} \\
+      & \hspace{61pt} \text{such that $Σ(exp)=c~exp_1\cdots exp_m$} \nonumber \\
+    \dd(\EE{f_p~(exp_1'\cdots exp_n')}) & = f_p~(exp_1'\cdots exp_n') \\
+    \dd(f_m(exp_1'\cdots exp_n')) & = f_m(exp_1'\cdots exp_n') \\
+    \noalign{\raggedright \hspace{4em} General Expression:}
+    \dd(exp') & = exp' \\
+    \noalign{\raggedright \hspace{4em} Branch:}
+    \dd(pat |> b) & = pat |> \dd(b) \\ 
+    \dd(pat \mid exp' |> b) & = pat \mid exp' |> \dd(b)
+  \end{align}
+  \caption{Semantic Derivation}
+  \label{fig:sd}
+\end{figure}
+
+To illustrate the algorithm, some examples will be presented.
+Example \ref{exm:nand} defines $\<nand>$ by other translation rules $\<not>$ and $\<and>$.
+Assume that the semantics of $\<not>$ and $\<and>$ have been derived earlier.
+We will observe that how $\dd$ works recursively.
+For clarity, the parts that need to be applied by $\dd$ are underlined.
+
+\begin{example}\label{exm:nand}
+  $e_1~\<nand>~e_2 => \<not>~(e_1~\<and>~e_2)$:
+  \begin{align*}
+       & \EE{e_1~\<nand>~e_2} \\
+    =~ & \dhl{\EE{\<not>~(e_1~\<and>~e_2)}} \\
+    =~ & \dhl{\EE{e_1~\<and>~e_2}
+            :\branch{\<true>|>\<false> \\& \<false>|>\<true>}} \\
+    =~ & \dhl{\EE{e_1~\<and>~e_2}}
+            :\branch{\<true>|>\dhl{\<false>} \\& \<false>|>\dhl{\<true>}} \\
+    =~ & \dhl{\EE{e_1}
+            :\branch{\<true>|>\EE{e_2} \\& \<false>|>\<false>}
+           }:\branch{\<true>|>\<false> \\& \<false>|>\<true>} \\
+    =~ & \EE{e_1}
+          :\branch{\<true>|>\EE{e_2} \\& \<false>|>\<false>}
+          :\branch{\<true>|>\<false> \\& \<false>|>\<true>} 
+  \end{align*}  
+\end{example}
+
+The language construct $\<let>$ is a common syntactic sugar, defined by lambda abstraction and application.
+Considering $\<let>$ as a translation rule, example \ref{exm:let} presents the derivation of its evaluation rule.
+Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda lifting.
+The last step is simplification, since that both left and right sides are constructed by $\<Abs>$ (i.e., $λ$ in language).
+simplification is sometimes useful for abstraction property, for instance in this example,
+ where the evaluation rule of $\<let>$ no longer depends on lambda abstraction (even if this is allowed).
+In addition, substituion, as a meta-function, appears in the following derivation, which does not affect the expansion.
+In \todo{}, we will discuss substituion more deeply.
+
+\begin{example}
+  $\<let>~x:t=e_1~\<in>~e_2 => (λx:t.e_2)~e_1$:
+  \begin{align*}
+       & \EE{\<let>~x:t=e_1~\<in>~e_2} \\
+    =~ & \dhl{\EE{(λx:t.e_2)~e_1}}  \\
+    =~ & \dhl{\Let{λx':t'.e}{\EE{λx:t.e_2}} \Let{v_1}{\EE{e_1}} \EE{e[v_1/x']}} \\
+    =~ & \Let{λx':t'.e}{\dhl{\EE{λx:t.e_2}}} \dhl{\Let{v_1}{\EE{e_1}} \EE{e[v_1/x']}} \\
+    =~ & \Let{λx':t'.e}{λx:t.e_2} \Let{v_1}{\dhl{\EE{e_1}}} \dhl{\EE{e[v_1/x']}} \\
+    =~ & \Let{λx':t'.e}{λx:t.e_2} \Let{v_1}{\EE{e_1}} \EE{e[v_1/x']} \\
+    =~ & \Let{x'}{x} \Let{t'}{t} \Let{e}{e_2} \Let{v_1}{\EE{e_1}} \EE{e[v_1/x']}
+  \end{align*}
+  \label{exm:let}
+\end{example}
+
+
+Correctness is that, given a closed expression $e:\Exp$ in $L'$, the value by evaluation should be the same as the value,
+of fully translating first and then evaluating in $L$.
+We use subscripts to distinguish in which language the computation is performed.
+Then:
+\begin{align*}
+  \EELL{e} & = \EEL{\DS(e)} \\
+  \TTLL{e} & = \TTL{\DS(e)}
+\end{align*}
+If $e$ is constructed by $c_n$, then further, the following equation holds:
+\begin{align*}
+  \EELL{e} & = \EELL{\ds(e)} \\
+  \TTLL{e} & = \TTLL{\ds(e)}
+\end{align*}
+
