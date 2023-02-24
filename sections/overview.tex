@@ -1,25 +1,29 @@
 \section{Overview}
 
-In this section, we shall demonstrate how host language developers define a language with the meta-language,
-how DSL developers define a DSL by language extensions and translation rules,
-and how DSL become standalone by semantic derivation in our framework.
+In this section, we will outline our approach with an example.
+The following topics will be talked about:
+(1) how host language developers define a language (\STLC) with the meta-language,
+(2) how DSL developers define a DSL (\textsc{Bool}) by language extensions and translation rules,
+and (3) how DSL become standalone by semantic derivation in our framework.
 
 \subsection{Define Host Language via Meta-Language}
 
-Skeletal semantics can be used to describe concrete and abstract semantics in a structural way.
-A skeleton body is defined by a sequence of operations.
-An operation is either recursive computations (hooks),
-meta functions (filters), different pathways (branches).
-Our meta-language is a variant of Skeleton.
+Skeletal semantics \cite{skeleton} can be used to describe concrete and abstract semantics in a structural way.
+A skeleton body is defined by a sequence of bones.
+A bone is either recursive computations (hooks),
+ meta-operations (filters), or different pathways (branches).
+Our meta-language is based on Skeleton, but for different goals.
+We replace branch and merging with pattern matching,
+ and replace filters with meta-functions.
 For example, consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_2$ and $e_3$,
-whose operational semantics are defined using two seperate rules.
+ whose big-step operational semantics are defined using two seperate rules.
 \[
   \inference{e_1 \Da \<true> & e_2 \Da v_2}
   {\<if>~e_1~e_2~e_3 \Da v_2} \quad
   \inference{e_1 \Da \<false> & e_3 \Da v_3}
   {\<if>~e_1~e_2~e_3 \Da v_3}
 \]
-In our meta-language, the behaviour of $\<if>$ is given by
+In our meta-language, the evaluation rule of $\<if>$ is given by
 \[
   \EE{\<if>~e_1~e_2~e_3} \cqq
   \EE{e_1}: \branch{
@@ -28,9 +32,10 @@ In our meta-language, the behaviour of $\<if>$ is given by
   }.
 \]
 Here, $\EE{e_1}$ identifies the evaluation of subexpression $e_1$,
-whose result is used to select a specific branch by pattern matching (after the colon).
+ whose result is used to select a specific branch by pattern matching (after the colon).
 Then, subsequent computations are processed (after the triangle).
-We can also define the type rules of $\<if>$ in a similar way:
+If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate; the same for $\<false>$.
+The typing rule of $\<if>$ can be defined in a similar way:
 \[
   \TT{\<if>~e_1~e_2~e_3} \cqq
     \lt~\<bool> = \TT{e_1};~
@@ -42,14 +47,16 @@ we use $let$ as a syntactic sugar to represent a pattern matching with unique br
 The type of $e_1$ is required to be $\<bool>$.
 The matching of $e_3$ has a side condition (named \textit{guard} in Haskell),
 which requires $t_2$ to equal $t_3$.
-
+Note that the evaluation and typing rules of $\<if>$ are unique,
+ which guarantees the determinacy in derivation.
+ 
 \begin{figure}[t!]
   \begin{align*}
     e \in \Exp  & ::= \<true> \mid \<false> \mid \<if>~e_1~e_2~e_3 \\
                & \quad \mid x \mid λx:t.e \mid e_1~e_2            \\
     t \in \Type & ::= \<bool> \mid t_1 -> t_2
   \end{align*}
-  \caption{Syntax of STLC}
+  \caption{Syntax of \STLC}
   \label{fig:stlc_syntax}
 \end{figure}
 
@@ -64,18 +71,20 @@ which requires $t_2$ to equal $t_3$.
     \EE{λx:t.e}            & \cqq λx:t.e                                               \\
     \EE{e_1~e_2}           & \cqq \lt~λx:t.e=\EE{e_1};~\lt~v_2=\EE{e_2};~\EE{e[v_2/x]}
   \end{align*}
-  \caption{Semantics of STLC}
+  \caption{Semantics of \STLC}
   \label{fig:stlc}
 \end{figure}
 
-The syntax of STLC is given in Fig. \ref{fig:stlc_syntax}.
-And the semantics of STLC is given in Fig. \ref{fig:stlc}.
-We can observe that
+The syntax of \STLC{} is given in Fig. \ref{fig:stlc_syntax}.
+And the semantics of \STLC{} is given in Fig. \ref{fig:stlc}.
+But meta-language focus on the semantics rather than syntax.
+We need to think of each item of syntax as a language construct.
+In the evaluation rules, we can observe that:
 (1) the evaluation of values gets themselves,
-which is consistent with the big-step operational semantics,
-(2) and we use substitution to evaluate application.
-In our meta-language, substitution is considered as a special program transformation.
-Hence, the substitution rules of language constructs should be specified, omitted from this paper.
+ which is consistent with the big-step operational semantics,
+(2) and we use substitution in application.
+In our meta-language, substitution is considered as a special meta-function.
+The substitution rules of language constructs should be specified by developers, omitted here.
 
 We can think of evaluation $\mathcal{E}$ as a function of $\Exp -> \Exp$.
 Then the type $\mathcal{T}$ should be a function of $\Exp -> \Type$.
@@ -91,7 +100,7 @@ So that $\mathcal{T}$ is a function of $\Exp -> State~CtxStack~\Type$.
 With the Introduction of monad, the type rule of $\<if>$ remains unchanged.
 We can also keep the original semantic description intact
 when subsequent DSL users extend the host language.
-The type rules of STLC is given in Fig. \ref{fig:stlc_type}.
+The type rules of \STLC is given in Fig. \ref{fig:stlc_type}.
 
 \begin{figure}[t!]
   \begin{align*}
@@ -104,15 +113,14 @@ The type rules of STLC is given in Fig. \ref{fig:stlc_type}.
     \TT{x}        & \cqq searchCtx~x \\
     \TT{λx:t.e}   & \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e}; \\
                   & \hspace{13pt} \lt~\_=restoreCtx;~t->t' \\
-    \TT{e_1~e_2}  & \cqq \lt~λx:t.e=\EE{e_1};~\lt~v_2=\EE{e_2};~\EE{e[v_2/x]}
+    \TT{e_1~e_2}  & \cqq \Let{t_1->t}{\TT{e_1}} \TT{e_2}:(t_2\mid t_1=t_2|>t)
   \end{align*}
-  \caption{Type Rules of STLC}
+  \caption{Type Rules of \STLC}
   \label{fig:stlc_type}
 \end{figure}
 
 \subsection{Define the DSL}
 
-\todo{Use textsc for language names}
 Consider a task of implementing a DSL for boolean computations, half adder and full adder, named \textsc{Bool}.
 \textsc{Bool} has some expressions like
 \begin{align*}
@@ -120,7 +128,7 @@ Consider a task of implementing a DSL for boolean computations, half adder and f
   \<halfa>~\<true>~\<false> & \equiv (\<false>, \<true>).
 \end{align*}
 Since our language extends on the host language,
- all the syntax of STLC is also preserved in the DSL.
+ all the syntax of \STLC is also preserved in the DSL.
 The syntax of \textsc{Bool} is shown in Fig. \ref{fig:bool_syntax}
 Remember that we are more concerned with semantics than syntax, 
  and they are all treated as language constructs
@@ -204,7 +212,7 @@ the evaluation of $e_1~\<and>~e_2$ should be the same as $\<if>~e_1~e_2~\<false>
 Hence, according to the translation rule and evaluation rules of the host language, we have
 \begin{align*}
   \EE{e_1~\<and>~e_2} 
-    & = \EE{\<if>~e_1~e_2~\<false>} & \text{(Translation rule)} \\
+    & \cqq \EE{\<if>~e_1~e_2~\<false>} & \text{(Translation rule)} \\
     & = \EE{e_1}: \branch{
         \<true>  |> \EE{e_2} \\&
         \<false> |> \EE{\<false>}
@@ -228,7 +236,7 @@ As mentioned above, a language construct can be defined as a lambda abstraction 
 The above method will result in
 \begin{align*}
   \EE{\<andf>} 
-    & = \EE{λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>} \\
+    & \cqq \EE{λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>} \\
     & = λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>, 
 \end{align*}
 which breaks abstraction.
@@ -251,7 +259,7 @@ The method of deriving evaluation rules can also be applied to type rules.
 For example, the type rule of $\<and>$ can be derived by
 \begin{align*}
   \TT{e_1~\<and>~e_2}
-    & = \TT{\<if>~e_1~e_2~\<false>} 
+    & \cqq \TT{\<if>~e_1~e_2~\<false>} 
         & \text{(Translation rule)} \\
     & = \Let{\<bool>}{\TT{e_1}}
         \Let{t_2}{\TT{e_2}}
@@ -267,7 +275,7 @@ For example, the type rule of $\<and>$ can be derived by
         & \text{(Simplification)}
 \end{align*}
 
-\subsection*{Summary}
+% \subsection*{Summary}
 
-After these processes, the DSL developers implement \textsc{Bool} language.
-\todo{talk about standalone}
+% After these processes, the DSL developers implement \textsc{Bool} language.
+% \todo{talk about standalone}

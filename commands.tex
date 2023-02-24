@@ -10,18 +10,21 @@
 \usepackage{newunicodechar}
 \newunicodechar{λ}{\lambda}
 \newunicodechar{Σ}{\Sigma}
+\newunicodechar{ρ}{\rho}
+\newunicodechar{σ}{\sigma}
+\newunicodechar{τ}{\tau}
 
 % Semantics and reserved words
 \mathchardef\mhyphen="2D
 \usepackage[inference,ligature,reserved,shorthand]{semantic}
 \reservestyle[\mathinner]{\command}{\mathit}
 \command{let, in}
-\command{true, false, bool, int}
-\command{pair, fst, snd}
-\command{and, or, not, nand, nor, xor}
-\command{if, then, else}
+\command{true, false, bool, int, unit}
+\command{pair, fst, snd, as}
+\command{and, or, not, nand, nor, xor, for}
+\command{if, then, else, while, print, fix, ref, var, when, do, end, robot, whereAmI, left, right, up, down}
 \command{andf[and_f], andfp[and_f']}
-\command{halfa[half\mhyphen adder], fulla[full\mhyphen adder]}
+\command{halfa[half\mhyphen adder], fulla[full\mhyphen adder], Rf[Ref]}
 
 \reservestyle[\mathinner]{\Constructor}{\mathbf}
 \Constructor{Bool, True, False}
@@ -65,19 +68,33 @@
 \mathlig{|>}{\triangleright}
 
 \newcommand{\lifted}[1]{#1^\uparrow}
-\newcommand{\ds}{\mathbb{D}_1}
-\newcommand{\DS}{\mathbb{D}}
+\newcommand{\ds}[1]{\mathbb{D}_1(#1)}
+\newcommand{\DS}[1]{\mathbb{D}(#1)}
+\newcommand{\DB}[1]{\mathbb{D}_b(#1)}
 \newcommand{\dd}{C}
 \newcommand{\dhl}[1]{\underline{\dd(#1)}}
 
 \AtEndPreamble{%
 \theoremstyle{acmdefinition}
-\newtheorem{requirement}[theorem]{Requirement}}
+\newtheorem{requirement}[theorem]{Requirement}
+\newtheorem{assumption}[theorem]{Assumption}
+}
 
 \newcommand{\mE}{\mathcal{E}}
 \newcommand{\mT}{\mathcal{T}}
 
 \newcommand{\mexp}{\varepsilon}
 \newcommand{\cexp}{\widetilde{\varepsilon}}
+\newcommand{\ce}{\widetilde{e}}
+\newcommand{\cb}{\widetilde{b}}
 
-\newcommand{\STLC}{\textsc{STLC}}
+\newcommand{\STLC}{\textsc{Stlc}}
+\newcommand{\STLCex}{\textsc{Stlc}$_\text{ex}$}
+\newcommand{\RefIO}{\textsc{Ref}$_\text{IO}$}
+
+\newcommand{\lr}{\rr{\phantom{E}}}  % ------>
+\newcommand{\rr}[1]{\xrightarrow{~#1~}} % ---X-->
+
+\newcommand{\miff}{\text{iff}}
+
+\usepackage{tikz}

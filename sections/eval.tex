@@ -1,0 +1,190 @@
+\section{Case Studies}\label{sec:eval}
+
+In this section, we evaluate Osazone by implementing some languages based on \STLC. 
+We start with meta-extensions on \STLC.
+Language constructs pairs, sums, fixpoints and lists,
+ introduced in Chapter 11 of Types and Programming Languages\cite{tapl} are testes.
+And let bindings and ascription are implemented by translation rules.
+We name the new language as \STLCex.
+In this language, we will talk about the impact of fixpoints on abstraction.
+
+Then, we introduce reference by monad extension, getting \textsc{Ref}.
+Taking \textsc{Ref} as the host language,
+ we implement an imperative language \textsc{Imp}.
+The point we should care about in \textsc{Imp} is that,
+ recursive translation rules are declared in $\<while>$.
+As an extension of our framework,
+ we will discuss weak-abstraction semantic derivation.
+
+Then, we make \textsc{Ref} support I/O.
+Unlike other monads we have discussed, IO monad, however,
+ cannot be used as a monad transformer, which can be the base monad only.
+We will explain our strategies in this language \RefIO.
+
+Finally, based on \textsc{Ref}$_{IO}$,
+ we implement a DSL named \textsc{Robot}.
+The language assumes that a robot is located at some starting coordinates,
+ and users can control its movement, or print out its position with commands.
+In this example, We will talk about how to access ``global variables'' in the translation rules.
+
+The languages discussed in this section and their relation are shown in the Fig. \ref{fig:langs},
+ where horizontal arrows represent meta-extensions and monad extensions,
+ and vertical arrows stand for specification by translation rules.
+
+\begin{figure}
+  \input{assets/langs.tikz}
+  \caption{Languages for Examples}
+  \label{fig:langs}
+\end{figure}
+
+\subsection{\STLCex: Fixpoint}
+
+Fixpoint is a common approach to implement recursion in functional programming language.
+As a primitive language construct, the evaluation rule and typing rule of $\<fix>$ are specified:
+\begin{align*}
+  \EE{\<fix>~e} & \cqq \Let{λx:t.e_1}{\EE{e}} \EE{e_1[\<fix>~(λx:t.e_1)/x]} \\
+  \TT{\<fix>~e} & \cqq \TT{e}:(t_1->t_2\mid t_1=t_2 |> t_1). 
+\end{align*}
+
+Since an expression with substituion are evaluated,
+ the evaluation rule is not structural.
+And as mentioned above, unstructural evaluation rule should be considered how to maintain abstraction.
+\todo{}
+
+\subsection{\textsc{Imp}: Recursive Translation Rules}
+
+Our \textsc{Imp} language is defined by translation rules based on \textsc{Ref},
+ which means the use of variables should be reference-based.
+Therefore, the syntax of \textsc{Imp} here is slightly different from the general language.
+First, the declarations and initial values of variables are necessary.
+For example, a legal \textsc{Imp} program is
+\[ \<let>~x=\<ref>~1~\<in>~x:=!x+1; !x \]
+And $x:=1;x:=x+1;x$ is not permitted for $x$ not in scope.
+Also, we find that what is assigned in the declaration must be a reference to some expression.
+In order to simulate the syntax of declaration in common imperative language,
+ we can define syntactic sugar $\<var>$ shown in Fig. \ref{fig:imp}.
+The semicolon is used as part of the syntax of the declaration, to ensure that $x$ is valid in $e_2$.
+
+Second, in \textsc{Imp}, the left-hand side of an assignment must be a variable
+ and the any variable at right-hand side refers to the value stored in it (a location).
+Regretfully, we are not able to simplify this by translation rules,
+ and explicit dereferences are essential.
+A solution is to distinguish such $x$ by the parser, and transform to $!x$ in abstract syntax tree automatically.
+We still write dereferences in the following discussion.
+
+\begin{figure}
+  \begin{align*}
+    \<var>~x=e_1; e_2 & => \<let>~x=\<ref>~e_1~\<in>~e_2 \\
+    \<when>~e_1~e_2 & => \<if>~e_1~e_2~() \\
+    e_1 +\!\! = e_2 & => e_1 := !e_1 + e_2 \\
+    \<while>~e_1~\<do>~e_2~\<end> & => \<if>~e_1~(e_2; \<while>~e_1~\<do>~e_2~\<end>)~()
+  \end{align*}
+  \caption{Translation Rules for \textsc{Imp}}
+  \label{fig:imp}
+\end{figure}
+
+Some other common language constructs in \textsc{Imp} are defined in Fig. \ref{fig:imp}.
+But $\<while>$, whose definition does not satisfy requirement \ref{req:no-recursion}, is our concern.
+The semantic derivation algorithm will fail:
+\begin{align*}
+  & \EE{\<while>~e_1~\<do>~e_2~\<end>} \\ 
+  \cqq~~ & \dhl{\EE{\<if>~e_1~(e_2; \<while>~e_1~\<do>~e_2~\<end>)~()}} \\
+  =~~ & \EE{e_1}:\branch{
+        \<true> |> \Let{()}{\EE{e_2}} \dhl{\EE{\<while>~e_1~\<do>~e_2~\<end>}} \\&
+        \<false> |> ()
+    }
+\end{align*}
+Consider that we discard this step of expansion, the evaluation rule of $\<while>$ can be derived as follows, 
+ which is not structural but correct:
+\[ 
+  \EE{\<while>~e_1~\<do>~e_2~\<end>} \cqq \EE{e_1}:\branch{
+    \<true> |> \Let{()}{\EE{e_2}} \EE{\<while>~e_1~\<do>~e_2~\<end>} \\&
+    \<false> |> ()
+  } 
+\]
+Because $\<while>$ itself is a language construct in the DSL,
+ we can think of it as satisfying weak abstraction if we keep it in the evaluation rule.
+The more serious problem is the type derivation.
+It is reasonable that $\<while>$ has a recursive evaluation,
+ but the typing of $\<while>$ should not be.
+If the above approach is applied, an error typing rule is generated:
+\begin{align*}
+  \TT{\<while>~e_1~\<do>~e_2~\<end>} \cqq~
+  & \Let{\<bool>}{\TT{e_1}} \Let{\<unit>}{\TT{e_2}} \\
+  & \Let{t_2}{\TT{\<while>~e_1~\<do>~e_2~\<end>}} \<unit>:(t_3 \mid t_2=t_3 |> t_2)
+\end{align*}
+In this instance, the typing rule must be specified manually.
+
+More problem arise when \textsc{Imp} is used as a host language.
+When a language construct is translated to $\<while>$,
+ abstraction is difficult to guarantee.
+For example, $\<for>$ can be defined as:
+\[ \<for>~(e_1;e_2;e_3)~\<do>~e_4 => e_1;\<while>~e_2~\<do>~(e_4;e_3)~\<end> \]
+
+
+\subsection{\RefIO: IO Monad}
+
+As mentioned above, due to the absence of IO monad transformer,
+ we cannot support I/O with the method in section \ref{sec:dsl-monad}.
+For this, we provide two methods.
+(1) Writer monad is valid to simulate outputs, while inputs are not supported.
+(2) Always put an identity monad or IO monad at bottom, with other monads layered on top.
+When I/O is required, replace identity monad with IO monad.
+Then lift I/O functions, with other monadic meta-functions unchanged.
+
+For example, in \STLC, the signature of evaluation is expressed as $\mE: \Exp -> \Exp$.
+And now the signature is changed to $\mE: \Exp -> \mathit{Identity}~\Exp$.
+An additional benefit of this is that when introducing a new monad,
+ we do not need to distinguish whether it is a base monad or not,
+ so that all the monadic meta-functions are lifted by the $\mathit{lift}$ operator directly.
+Then, the signature of evaluation in \textsc{Ref} is transformed into:
+\[ \mathcal{E} : \Exp -> \mathit{StateT~Store~Identity}~\Exp \]
+To support I/O, the signature of evaluation in the new language becomes:
+\[ \mathcal{E} : \Exp -> \mathit{StateT~Store~IO}~\Exp. \]
+And meta-functions provided by IO monad are lifted once:
+\[ \lifted{\<print>}~e = \mathit{lift}~(\<print>~e). \]
+
+\subsection{\textsc{Robot}: Limitation on Global Variables}
+
+The goal of this language is to achieve simple control of robots in a two-dimensional plane.
+A sample program of \text{Robot} is:
+\[ \mathit{robot~5~5~\{ up, up, right, whereAmI, left, whereAmI \}} \]
+where $\mathit{robot}~5~5\{...\}$ declares a robot with a starting point of $(5,5)$,
+and the braces contain a series of commands to be executed on the robot, splitted by comma.
+Some commands are used to control the movement of the robot,
+ and command $\mathit{whereAmI}$ will print current position.
+
+As a natural idea, we record the current position of the robot via the global variables $x$ and $y$.
+Then each command reads and manipulates global variables,
+ and comma is defined as sequencing.
+These language constructs are defined as follows:
+\begin{align*}
+  \<robot>~e_1~e_2~\{e\} & => \<let>~x=\<ref>~e_1,y=\<ref>~e_2~\<in>~e \\
+  e_1,e_2 & => e_1;e_2 \\
+  \<left> & => x:=\ !x-1 \\
+  \<whereAmI> & => \<print>~!x; \<print>~!y
+\end{align*}
+where $x$ and $y$ are literal identifiers.
+But requirement \ref{req:close} is not satisfied.
+Since variables without local bindings cannot be used directly in translation rules,
+ it is necessary to pass the value of the variable as an argument to the language constructs or as an argument to a lambda abstraction.
+Hence, $\<left>$ can be expressed as
+\[ \<left> => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). ~(\<fst>~pos)~ \texttt{-=}~ 1; pos \]
+Note that $\<left>$ returns $pos$ to keep passing on the ``global'' state.
+Then, the comma operator is actually the composition of the functions.
+Some selected translation rules for \textsc{Robot} are given in Fig. \ref{fig:robot}.
+
+\begin{figure}
+  \begin{align*}
+    \<robot>~e_1~e_2~\{e\} & => e~(\<ref>~e_1,\<ref>~e_2) \\
+    e_1,e_2 & => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). ~e_2~(e_1~pos) \\
+    \<left> & => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). ~(\<fst>~pos)~ \texttt{-=}~ 1; pos \\
+    % \<right> & => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). ~(\<fst>~pos)~ \texttt{+=}~ 1; pos \\
+    % \<down> & => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). ~(\<snd>~pos)~ \texttt{-=}~ 1; pos \\
+    % \<up> & => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). ~(\<snd>~pos)~ \texttt{+=}~ 1; pos \\
+    \<whereAmI> & => λpos:(\<Rf>~\<int>)\times (\<Rf>~\<int>). \<print>~!(\<snd>~pos); \<print>~!(\<fst>~pos); pos
+  \end{align*}
+  \caption{Translation Rules for \textsc{Robot}}
+  \label{fig:robot}
+\end{figure}
+

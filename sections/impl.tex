@@ -1,0 +1,44 @@
+\section{Implementation}\label{sec:impl}
+
+We have implemented a prototype of our framework for language engineer in Haskell, named \textit{Osazone}.
+Osazone allows users to define a host language and design a DSL by extensions and translation rules,
+ corresponding to section \ref{sec:host} and \ref{sec:dsl}.
+To define a host language, as a project, Osazone takes following as input:
+\begin{itemize}
+  \item The sorts and language constructs of the host language;
+  \item The evaluation rules, typing rules and substituion rules for language constructs;
+  \item Custom meta-functions;
+  \item An entrance for program evaluation or typing.
+\end{itemize}
+Here program entrance specifies the initial state of the environment when monad is introduced in computation.
+For example, the entrance of evaluation and typing in \textsc{Ref} are respectively:
+\begin{flalign*}
+  \hspace{2em} & \text{Evaluation: } \mathit{runState}~(\EE{\bullet})~\mathit{empty} & \\
+  & \text{Typing: } \mathit{runEnv}~(\mathit{runState}~\TT{\bullet}~\mathit{empty})~\mathit{initCtx}
+\end{flalign*}
+
+Osazone then provide an interpreter for this language, by generating Haskell code.
+A program can be evaluated and typed using the interpreter.
+In addition, users can provide parser (with Parsec \cite{mpc, parsec}) and pretty printer of the language,
+ replacing the default ones.
+
+To define a DSL, users need to provide:
+\begin{itemize}
+  \item The host language.
+  \item First step: a file for meta-extensions;
+  \item Second step: a file for monad extensions;
+  \item Third step: a file for translation rules;
+  \item A configuration file to filter language constructs of the host language preserved in the DSL.
+\end{itemize}
+Since monad extensions are always accompanied by meta extensions,
+ meta-extensions can also be performed in monad extensions.
+But these three steps of extensions are processed one by one ---
+ monadic meta-functions in the first step will be lifted automatically in the second step,
+ while those in the monadic extensions will not.
+Translation rules are finally analyzed, generating corresponding rules.
+The configuration file is designed to make the DSL standalone:
+ redundant language constructs can be removed safely (because of abstraction).
+Then the output of Osazone is a new project for this DSL: sorts, constructors, rules, functions and entrances.
+Then an interpreter of DSL is obtained for free.
+
+We will provide some examples to demonstrate the usefulness of our framework in the next section.

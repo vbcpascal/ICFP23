@@ -1,8 +1,8 @@
-\section{Language Lifting}
+\section{Language Lifting}\label{sec:alg}
 
 Language lifting is the method for generating a stondalone DSL from an extended host language and translation rules.
 Ignoring the modification of the syntax, we will present how to derive computation rules and type rules.
-In particular, we will discuss language lifting for those whose host language is STLC or extended STLC.
+In particular, we will discuss language lifting for those whose host language is \STLC{} or extended \STLC.
 
 \subsection{Preprocessing: Lambda Lifting}
 
@@ -49,13 +49,11 @@ For a DSL defined by multiple translation rules,
  we derive the evaluation and typing rules and add them to the language individually.
 
 % And now we will give the algorithm of semantic derivation. 
-Suppose a host language based on STLC is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
+Suppose a host language based on \STLC is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
 where $S_p=\{\Exp,\Type\}$,
 and a translation rule $tr$ has shape $c_n~exp_1\cdots exp_n => e$,
 where $sort(c_n)=\Exp$ and $tr$ satisfies the requirements.
 Let $L'=\langle S_p, C', R'_{\mE}, R'_{\mT}, R'_{subst}, F\rangle$ be the new language that supports $c_n$ (i.e., $C'=C \cup \{c_n\}$).
-
-\subsubsection{Algorithm}
 
 In overview, the core idea of the semantic derivation has been shown: 
  expand expressions evaluation recursively according to the rules in $L$ 
@@ -65,20 +63,20 @@ Formally, $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$, the definition of $\dd$ is shown in 
 \begin{figure}
   $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$
   \begin{align}
-    \noalign{\raggedright \hspace{4em} Body:}
+    \noalign{\raggedright \hspace{2em} \bf Body:}
     \dd(b:(br_1\cdots br_n)) & = \dd(b):(\dd(br_1)\cdots \dd(br_n)) \\
     \dd(\Let{pat}{b_1} b_2) & = \Let{pat}{\dd(b_1)} \dd(b_2) \\
-    \noalign{\raggedright \hspace{4em} Bone:}
+    \noalign{\raggedright \hspace{2em} \bf Bone:}
     \dd(\EE{exp_x}) & = \EE{exp_x} \\  
     \dd(\EE{exp_b}) & = \EE{exp_b} \\
     \dd(\EE{c~exp_1\cdots exp_m}) 
       & = \dd(Σ(d)) \hspace{20pt} \text{if there exists $Σ$ and $\EE{exp}\cqq d$,} \\
       & \hspace{61pt} \text{such that $Σ(exp)=c~exp_1\cdots exp_m$} \nonumber \\
     \dd(\EE{f_p~(exp_1'\cdots exp_n')}) & = f_p~(exp_1'\cdots exp_n') \\
-    \dd(f_m(exp_1'\cdots exp_n')) & = f_m(exp_1'\cdots exp_n') \\
-    \noalign{\raggedright \hspace{4em} General Expression:}
+    \dd(f_m(exp_1'\cdots exp_n')) & = \EE{f_m(exp_1'\cdots exp_n')} \\
+    \noalign{\raggedright \hspace{2em} \bf General Expression:}
     \dd(exp') & = exp' \\
-    \noalign{\raggedright \hspace{4em} Branch:}
+    \noalign{\raggedright \hspace{2em} \bf Branch:}
     \dd(pat |> b) & = pat |> \dd(b) \\ 
     \dd(pat \mid exp' |> b) & = pat \mid exp' |> \dd(b)
   \end{align}
@@ -133,18 +131,147 @@ In \todo{}, we will discuss substituion more deeply.
   \label{exm:let}
 \end{example}
 
+\subsubsection{Properties}
 
-Correctness is that, given a closed expression $e:\Exp$ in $L'$, the value by evaluation should be the same as the value,
-of fully translating first and then evaluating in $L$.
+With the semantic derivation algorithm, the evaluation rules of $L'$ are generated.
+We expect these rules to have the following properties:
+\begin{itemize}
+  \item Correctness: a closed expression $\ce$ in $L'$, should have the same value as 
+         that of expression fully translating first and then evaluation in $L$.
+  \item Abstraction: any constructor used in evaluation rules of $L'$ is either a value constructor,
+         or a DSL constructor.
+\end{itemize}
+In this section, we will presents these properties formally.
+
 We use subscripts to distinguish in which language the computation is performed.
-Then:
-\begin{align*}
-  \EELL{e} & = \EEL{\DS(e)} \\
-  \TTLL{e} & = \TTL{\DS(e)}
-\end{align*}
-If $e$ is constructed by $c_n$, then further, the following equation holds:
-\begin{align*}
-  \EELL{e} & = \EELL{\ds(e)} \\
-  \TTLL{e} & = \TTLL{\ds(e)}
-\end{align*}
+% Then, the correctness is
+% \[ \EELL{\ce} \rr{X} v ~\text{ iff }~ \EEL{\DS{\ce}} \rr{X} \DS{v}. \]
+For the proof of the correctness theorem, we will illustrate $\dd$ 
+To prove the above conclusion, we first illustrate that $\dd$ does not influence the result of a closed bone $b$.
+
+\begin{lemma}
+  Support $b$ is a closed bone $b$. Then:
+  \[ b \rr{X} v ~\text{ iff }~ \dd(b) \rr{X} v \]
+\end{lemma}
+
+\begin{proof}
+  By induction on a derivation of $b \rr{X} v$. 
+  The \textsc{Base}, \textsc{PureFun} and \textsc{MonadicFun} cases are immediate, since $C(b)=b$.
+  The other cases are shown as follows:
+
+  Case \textsc{Rec}: let $b=\EE{e}$. We find that $\dd$ has different forms according to $e$.
+  We consider each case separately:
+  \begin{itemize}
+    \item $e$ is a base expression, or a pure meta-function invocation: $C(b)=b$;
+    \item $e=c~\cexp_1\cdots \cexp_n$: we have $\EE{e}=L[e]$.
+      Furthermore, according to the definition of $\dd$, 
+      we can find a \textit{closed} environment $Σ$ and a rule $\EE{\mexp}\cqq b_1$ in $L$, such that $Σ(\mexp) = e$, $\dd(\EE{e})=\dd(Σ(b_1))$.
+      Since $e$ is a closed variable, $Σ(b_1)$ is a closed bone, and $Σ(b_1)=L[e]$.
+      By the induction hypothesis, $L[e]\rr{X} v$ iff $\dd(L[e])\rr{X} v$.
+      Then, $\EE{e}\rr{X} v$, iff $\dd(\EE{e})\rr{X} v$.
+  \end{itemize}
+
+  Case \textsc{LetIn}: let $b=\Let{pat}{b_1} b_2$.
+    Then $b\rr{X} v$, if and only if the following judgements are satisfied:  
+    \[ b_1\rr{X_1}v_1 \quad Σ=match(pat,v_1) \quad Σ(b_2)\rr{X_2}v_2 \quad X=X_1;X_2, \]
+     where $Σ(b_2)$ is a closed bone.
+    By the induction hypothesis, we have
+    \[ b_1\rr{X_1}v_1 \miff C(b_1)\rr{X_1}v_1 ,\quad Σ(b_2)\rr{X_2}v_2 \miff C(Σ(b_2))\rr{X_2}v_2. \]
+    Therefore, we can apply rule \textsc{LetIn} to conclude \todo{lemma: C Sigma}
+    \[ \Let{pat}{C(b_1)} C(b_2) \rr{X} v \]
+    whose left-hand side equals to $C(b)$.
+
+  Case \textsc{Branch}: Similar.
+\end{proof}
+
+Before the proof of correctness, we will give a stronger lemma,
+ of which correctness theorem is an instance.
+The full translation is defined on the expressions now,
+ which can be extended to the bone $b$,
+ by fully translation all the expressions in it recursively.
+We use $\DB{b}$ to express the full translation on the bone and omit its formal definition.
+
+\begin{lemma}\label{lemma:b-db}
+  Support $\cb$ is a closed bone. Then:
+  \[ \cb \rr{X} v \quad\miff\quad \DB{\cb} \rr{X} \DS{v} \]
+\end{lemma}
+
+\begin{proof}
+  By induction on a derivation of $\cb \rr{X} v$. 
+  The \textsc{Base} case are obvious.
+
+  Case \textsc{PureFun} and \textsc{MonadicFun}: by assumption \ref{asm:fun-ds}. 
+  
+  Case \textsc{Rec}: suppose that $b=\EE{e}$. There are three cases should be considered.
+  \begin{itemize}    
+    \item $e=c_n~\cexp_1\cdots \cexp_n$ where $c_n$ is a new constructor.
+      Then \todo{}:
+      \begin{align*}
+        & \EE{c_n~\cexp_1\cdots \cexp_n} \rr{X} v \\
+        \text{iff}~~ & L'[c_h~\mexp_1\cdots \mexp_n]\rr{X} v & \text{by the rule \textsc{Rec}} \\
+        \text{iff}~~ & \DB{L'[c_h~\mexp_1\cdots \mexp_n]} \rr{X} \DS{v} & \text{inductive hypothesis} \\
+        \text{iff}~~ & L'[\DB{c_h~\mexp_1\cdots \mexp_n}] \rr{X} \DS{v} & \text{\todo{}} \\
+        \text{iff}~~ & \EE{\DB{c_h~\mexp_1\cdots \mexp_n}} \rr{X} \DS{v} & \text{by the rule \textsc{Rec}} \\
+      \end{align*}
+    \item $e=c_h~\mexp_1\cdots \mexp_n$ where $c_h$ is a host constructor.
+      Then:
+      \begin{align*}
+        & \EE{c_h~\mexp_1\cdots \mexp_n} \rr{X} v \\
+        \text{iff}~~ & L'[c_h~\mexp_1\cdots \mexp_n]\rr{X} v & \text{by the rule \textsc{Rec}} \\
+        \text{iff}~~ & \DB{L'[c_h~\mexp_1\cdots \mexp_n]} \rr{X} \DS{v} & \text{inductive hypothesis} \\
+        \text{iff}~~ & L'[\DB{c_h~\mexp_1\cdots \mexp_n}] \rr{X} \DS{v} & \text{\todo{}} \\
+        \text{iff}~~ & \EE{\DB{c_h~\mexp_1\cdots \mexp_n}} \rr{X} \DS{v} & \text{by the rule \textsc{Rec}} \\
+      \end{align*}
+    \item $e=f_p(\mexp_1\cdots \mexp_n)$. 
+      Then $\EE{e}\rr{X} v$, iff $e\lr v$ and $L[v]\rr{X} v$.
+  \end{itemize}
+\end{proof}
+
+\begin{theorem}[Correctness]
+  For any $\ce \in L'$, 
+  \[ \EELL{\ce} \rr{X} v \quad\miff\quad \EEL{\DS{\ce}} \rr{X} \DS{v} \]
+\end{theorem}
+
+\begin{proof}
+  Proved in lemma \ref{lemma:b-db}.
+\end{proof}
+
+\subsubsection{Abstraction}
+
+Correctness is the foundation of the algorithm,
+ while abstraction is the aim of our algorithm.
+Before the proof of abstraction property,
+ we first present \textit{strong abstraction theorem}.
+
+% \begin{definition}[Strong Abstraction]
+%   Consider $L'$ is defined by translation rules on the host language $L$.
+%   Any constructor used in evaluation rules of $L'$ is value constructor.
+% \end{definition}
+
+\begin{theorem}[Strong Abstraction]
+  If all the evaluation rules of the host language $L$ are structural,
+  the derived rules are also structural.
+\end{theorem}
+
+A structural evaluation rule required that the constructors used must be value constructors.
+
+\begin{proof}
+  
+\end{proof}
+
+Strong abstraction property futher illustrates the importance of structural evaluation rules.
+And abstraction allows the language constructs to be used in the rules.
+Since the lambda abstraction in the translation rules has been defined as a new translation rules by lambda lifting, 
+ the original translation rules are defined by this new language constructs, which is a DSL construct.
+Recursively, all generated translation rules satisfy such property.
+Therefore:
+
+\begin{theorem}
+  Lambda lifting maintains the abstraction.
+\end{theorem}
+
+
+
+% \subsection{Substitution in Semantic Derivation}
+
 

@@ -7,6 +7,46 @@
   pages   = {147-161}
 }
 
+@inproceedings{macro-dsl,
+  title     = {From Macros to DSLs: The Evolution of Racket},
+  author    = {Ryan Culpepper and Matthias Felleisen and Matthew Flatt and Shriram Krishnamurthi},
+  booktitle = {Summit on Advances in Programming Languages},
+  year      = {2019}
+}
+
+@article{macro-dsl-2,
+  author     = {Felleisen, Matthias and Findler, Robert Bruce and Flatt, Matthew and Krishnamurthi, Shriram and Barzilay, Eli and McCarthy, Jay and Tobin-Hochstadt, Sam},
+  title      = {A Programmable Programming Language},
+  year       = {2018},
+  issue_date = {March 2018},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {61},
+  number     = {3},
+  issn       = {0001-0782},
+  url        = {https://doi.org/10.1145/3127323},
+  doi        = {10.1145/3127323},
+  abstract   = {As the software industry enters the era of language-oriented programming, it needs programmable programming languages.},
+  journal    = {Commun. ACM},
+  month      = {feb},
+  pages      = {62–71},
+  numpages   = {10}
+}
+
+@misc{Abstraction,
+  howpublished = {\url{https://www.joelonsoftware.com/2002/11/11/the-law-of-leaky-abstractions/}},
+  author       = {Joel Spolsky},
+  title        = {The Law of Leaky Abstractions},
+  year         = {2002}
+}
+
+@misc{expr-problem,
+  howpublished = {\url{http://homepages.inf.ed.ac.uk/wadler/papers/expression/expression.txt/}},
+  author       = {Philip Wadler},
+  title        = {The Expression Problem},
+  year         = {1998}
+}
+
 @inproceedings{resugar,
   author    = {Pombrio, Justin and Krishnamurthi, Shriram},
   title     = {Resugaring: Lifting Evaluation Sequences through Syntactic Sugar},
@@ -81,17 +121,194 @@
 }
 
 @inproceedings{hygine,
-author = {Kohlbecker, Eugene and Friedman, Daniel P. and Felleisen, Matthias and Duba, Bruce},
-title = {Hygienic Macro Expansion},
-year = {1986},
-isbn = {0897912004},
+  author    = {Kohlbecker, Eugene and Friedman, Daniel P. and Felleisen, Matthias and Duba, Bruce},
+  title     = {Hygienic Macro Expansion},
+  year      = {1986},
+  isbn      = {0897912004},
+  publisher = {Association for Computing Machinery},
+  address   = {New York, NY, USA},
+  url       = {https://doi.org/10.1145/319838.319859},
+  doi       = {10.1145/319838.319859},
+  booktitle = {Proceedings of the 1986 ACM Conference on LISP and Functional Programming},
+  pages     = {151–161},
+  numpages  = {11},
+  location  = {Cambridge, Massachusetts, USA},
+  series    = {LFP '86}
+}
+
+@article{msos,
+  title    = {Modular structural operational semantics},
+  journal  = {The Journal of Logic and Algebraic Programming},
+  volume   = {60-61},
+  pages    = {195-228},
+  year     = {2004},
+  note     = {Structural Operational Semantics},
+  issn     = {1567-8326},
+  doi      = {https://doi.org/10.1016/j.jlap.2004.03.008},
+  url      = {https://www.sciencedirect.com/science/article/pii/S156783260400027X},
+  author   = {Peter D Mosses},
+  keywords = {Structural operational semantics, SOS, Modularity, MSOS},
+  abstract = {Modular SOS (MSOS) is a variant of conventional Structural Operational Semantics (SOS). Using MSOS, the transition rules for each construct of a programming language can be given incrementally, once and for all, and do not need reformulation when further constructs are added to the language. MSOS thus provides an exceptionally high degree of modularity in language descriptions, removing a shortcoming of the original SOS framework. After sketching the background and reviewing the main features of SOS, the paper explains the crucial differences between SOS and MSOS, and illustrates how MSOS descriptions are written. It also discusses standard notions of semantic equivalence based on MSOS. Appendix A shows how the illustrative MSOS rules given in the paper would be formulated in conventional SOS.}
+}
+
+@book{tapl,
+  author    = {Pierce, Benjamin C.},
+  day       = 01,
+  isbn      = {0262162091},
+  keywords  = {03b15-higher-order-logic-type-theory},
+  month     = feb,
+  posted-at = {2015-09-16 07:18:50},
+  priority  = {5},
+  publisher = {MIT Press},
+  timestamp = {2017-06-29T07:13:07.000+0200},
+  title     = {{Types and Programming Languages}},
+  year      = 2002
+}
+
+@report{mpc,
+  title       = {Monadic parser combinators},
+  year        = {1996},
+  institution = {University of Nottingham},
+  url         = {https://www.cs.nott.ac.uk/~pszgmh/monparsing.pdf},
+  author      = {Graham Hutton and Erik Meijer}
+}
+
+@article{parsec,
+  author = {Leijen, Daan and Meijer, Erik},
+  year   = {2001},
+  month  = {12},
+  pages  = {},
+  title  = {Parsec: Direct Style Monadic Parser Combinators For The Real World}
+}
+
+@inproceedings{K-framework,
+  title  = {IsaK: A Complete Semantics of K},
+  author = {Liyi Li and Elsa L. Gunter},
+  year   = {2018}
+}
+
+@article{ott,
+  author     = {Sewell, Peter and Nardelli, Francesco Zappa and Owens, Scott and Peskine, Gilles and Ridge, Thomas and Sarkar, Susmit and Strni\v{s}a, Rok},
+  title      = {Ott: Effective Tool Support for the Working Semanticist},
+  year       = {2007},
+  issue_date = {September 2007},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {42},
+  number     = {9},
+  issn       = {0362-1340},
+  url        = {https://doi.org/10.1145/1291220.1291155},
+  doi        = {10.1145/1291220.1291155},
+  abstract   = {It is rare to give a semantic definition of a full-scale programming language, despite the many potential benefits. Partly this is because the available metalanguages for expressing semantics - usually either L<scp>a</scp>TEX for informal mathematics, or the formal mathematics of a proof assistant - make it much harder than necessary to work with large definitions.We present a metalanguage specifically designed for this problem, and a tool, ott, that sanity-checks such definitions and compiles them into proof assistant code for Coq, HOL, Isabelle, and (in progress) Twelf, together with L<scp>a</scp>TEX code for production-quality typesetting, and OCaml boilerplate. The main innovations are:(1) metalanguage design to make definitions concise, and easy to read and edit;(2) an expressive but intuitive metalanguage for specifying binding structures; and (3) compilation to proof assistant code.This has been tested in substantial case studies, including modular specifications of calculi from the TAPL text, a Lightweight Java with Java JSR 277/294 module system proposals, and a large fragment of OCaml (around 306 rules), with machine proofs of various soundness results. Our aim with this work is to enable a phase change: making it feasible to work routinely, without heroic effort, with rigorous semantic definitions of realistic languages.},
+  journal    = {SIGPLAN Not.},
+  month      = {oct},
+  pages      = {1–12},
+  numpages   = {12}
+}
+
+@book{MartinDSL,
+  author = {Martin Fowler, Rebecca Parsons},
+  title  = {Domain Specific Languages},
+  year   = {2010}
+}
+
+@article{when-how-dsl,
+  author     = {Mernik, Marjan and Heering, Jan and Sloane, Anthony M.},
+  title      = {When and How to Develop Domain-Specific Languages},
+  year       = {2005},
+  issue_date = {December 2005},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {37},
+  number     = {4},
+  issn       = {0360-0300},
+  url        = {https://doi.org/10.1145/1118890.1118892},
+  doi        = {10.1145/1118890.1118892},
+  journal    = {ACM Comput. Surv.},
+  month      = {dec},
+  pages      = {316–344},
+  numpages   = {29},
+  keywords   = {language development system, domain analysis, application language, Domain-specific language}
+}
+
+@inproceedings{MoggiMeta,
+  title  = {Metalanguages and Applications},
+  author = {Eugenio Moggi and Andrew M. Pitts and Peter Dybjer},
+  year   = {1997}
+}
+
+@article{abs-1,
+  author     = {Hennessy, John},
+  title      = {Symbolic Debugging of Optimized Code},
+  year       = {1982},
+  issue_date = {July 1982},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {4},
+  number     = {3},
+  issn       = {0164-0925},
+  url        = {https://doi.org/10.1145/357172.357173},
+  doi        = {10.1145/357172.357173},
+  journal    = {ACM Trans. Program. Lang. Syst.},
+  month      = {jul},
+  pages      = {323–344},
+  numpages   = {22}
+}
+
+@article{abs-2,
+  author     = {H\"{o}lzle, Urs and Chambers, Craig and Ungar, David},
+  title      = {Debugging Optimized Code with Dynamic Deoptimization},
+  year       = {1992},
+  issue_date = {July 1992},
+  publisher  = {Association for Computing Machinery},
+  address    = {New York, NY, USA},
+  volume     = {27},
+  number     = {7},
+  issn       = {0362-1340},
+  url        = {https://doi.org/10.1145/143103.143114},
+  doi        = {10.1145/143103.143114},
+  abstract   = {SELF's debugging system provides complete source-level debugging (expected behavior) with globally optimized code. It shields the debugger from optimizations performed by the compiler by dynamically deoptimizing code on demand. Deoptimization only affects the procedure activations that are actively being debugged; all other code runs at full speed. Deoptimization requires the compiler to supply debugging information at discrete interrupt points; the compiler can still perform extensive optimizations between interrupt points without affecting debuggability. At the same time, the inability to interrupt between interrupt points is invisible to the user. Our debugging system also handles programming changes during debugging. Again, the system provides expected behavior: it is possible to change a running program and immediately observe the effects of the change. Dynamic deoptimization transforms old compiled code (which may contain inlined copies of the old version of the changed procedure) into new versions reflecting the current source-level state. To the best of our knowledge, SELF is the first practical system providing full expected behavior with globally optimized code.},
+  journal    = {SIGPLAN Not.},
+  month      = {jul},
+  pages      = {32–43},
+  numpages   = {12}
+}
+
+@article{abs-3,
+  title     = {Fortifying macros},
+  volume    = {22},
+  doi       = {10.1017/S0956796812000275},
+  number    = {4-5},
+  journal   = {Journal of Functional Programming},
+  publisher = {Cambridge University Press},
+  author    = {CULPEPPER, RYAN},
+  year      = {2012},
+  pages     = {439–476}
+}
+
+@article{type-sound,
+author = {Lorenzen, Florian and Erdweg, Sebastian},
+title = {Sound Type-Dependent Syntactic Language Extension},
+year = {2016},
+issue_date = {January 2016},
 publisher = {Association for Computing Machinery},
 address = {New York, NY, USA},
-url = {https://doi.org/10.1145/319838.319859},
-doi = {10.1145/319838.319859},
-booktitle = {Proceedings of the 1986 ACM Conference on LISP and Functional Programming},
-pages = {151–161},
-numpages = {11},
-location = {Cambridge, Massachusetts, USA},
-series = {LFP '86}
+volume = {51},
+number = {1},
+issn = {0362-1340},
+url = {https://doi.org/10.1145/2914770.2837644},
+doi = {10.1145/2914770.2837644},
+abstract = {Syntactic language extensions can introduce new facilities into a programming language while requiring little implementation effort and modest changes to the compiler. It is typical to desugar language extensions in a distinguished compiler phase after parsing or type checking, not affecting any of the later compiler phases. If desugaring happens before type checking, the desugaring cannot depend on typing information and type errors are reported in terms of the generated code. If desugaring happens after type checking, the code generated by the desugaring is not type checked and may introduce vulnerabilities. Both options are undesirable. We propose a system for syntactic extensibility where desugaring happens after type checking and desugarings are guaranteed to only generate well-typed code. A major novelty of our work is that desugarings operate on typing derivations instead of plain syntax trees. This provides desugarings access to typing information and forms the basis for the soundness guarantee we provide, namely that a desugaring generates a valid typing derivation. We have implemented our system for syntactic extensibility in a language-independent fashion and instantiated it for a substantial subset of Java, including generics and inheritance. We provide a sound Java extension for Scala-like for-comprehensions.},
+journal = {SIGPLAN Not.},
+month = {jan},
+pages = {204–216},
+numpages = {13},
+keywords = {automatic verification, macros, Language extensibility, metaprogramming, type-dependent desugaring, type soundness}
+}
+
+@article{type-sound-1,
+  title={Modular and automated type-soundness verification for language extensions},
+  author={Florian Lorenzen and Sebastian Erdweg},
+  journal={Proceedings of the 18th ACM SIGPLAN international conference on Functional programming},
+  year={2013}
 }

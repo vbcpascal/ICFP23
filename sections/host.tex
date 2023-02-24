@@ -1,11 +1,12 @@
-\section{Meta-Language and Host Languages}
+\section{Meta-Language and Host Languages}\label{sec:host}
 
-% 介绍元语言的语法和语义，和生成到Haskell的翻译过程
-% 宿主语言需要说我们要的是模块化的语义，即
+In this section, the syntax and semantics of our meta-language are formalized.
+We will talk about the rules written by meta-language and their interpretation.
+We will then briefly describe the importance of structural evaluation rules in host language,
+ in preparation for the semantic derivation.
+The concepts meta-language and host language (or any language defined by meta-language) need to be distinguished.
 
-In this section, we will discuss the syntax and semantic of our meta-language.
-
-\subsection{Meta-Language}
+\subsection{Meta-Language}\label{sec:meta}
 
 As mentioned above, our meta-language is inspired by Skeleton.
 But it differs in the problems and is therefore adapted.
@@ -67,30 +68,27 @@ An environment $Σ$ is \textit{closed} for expression $\mexp$, when $Σ(\mexp)$ 
 
 \begin{figure}
   \begin{align*}
-    d \in Body 
-      & ::= b  \\
+    b \in Bone 
+      & ::= \mexp' & \text{(General Expression)} \\
+      & \quad \mid h(\mexp') & \text{(Recursive Computation)} \\
+      & \quad \mid f_m(\mexp'_1\cdots \mexp'_n) & \text{(Monadic Meta-function)} \\
       & \quad \mid b:(br_1\cdots br_n) & \text{(Pattern Matching)} \\
       & \quad \mid \Let{pat}{b_1} b_2 & \text{(Let Binding)} \\
-    b \in Bone
-      & ::= exp' & \text{(General Expression)} \\
-      & \quad \mid h(exp') & \text{(Recursive Computation)} \\
-      % & \quad \mid H(e_1[e_2/x]) & \text{(Recursive Computation with Substitution)} \\
-      & \quad \mid f_m(exp'_1\cdots exp'_n) & \text{(Monadic Meta-function)} \\
-    exp' \in \Exp_G
-      & ::= exp & \text{(Expression)} \\
-      & \quad \mid f_p(exp'_1\cdots exp'_n) & \text{(Pure Meta-function)} \\
+    \mexp' \in \Exp_G
+      & ::= \mexp & \text{(Expression)} \\
+      & \quad \mid f_p(\mexp'_1\cdots \mexp'_n) & \text{(Pure Meta-function)} \\
     br \in Branch
       & ::= pat |> b \\
-      & \quad \mid exp' |> b \\
+      & \quad \mid pat \mid \mexp' |> b \\
     pat \in \mathit{Pattern}
-      & ::= exp_x & \text{(Expression Variable)} \\
+      & ::= \mexp_x & \text{(Pattern Variable)} \\
       & \quad \mid c~pat_1\cdots pat_n & \text{(Compound Pattern)}
   \end{align*}
 \caption{Body of Rules in Meta-Language}
 \label{fig:body}
 \end{figure}
 
-A rule of meta-language has the shape $h(c~\mexp_{x_1}\cdots \mexp_{x_n}) \cqq d$, 
+A rule of meta-language has the shape $h(c~\mexp_{x_1}\cdots \mexp_{x_n}) \cqq b$, 
  where $h$ is the name of interpretation like $\mathcal{E}$ and $\mathcal{T}$,
  $c$ is a constructor, 
  $\mexp_{x_1}\cdots \mexp_{x_n}$ are expression variables,
@@ -120,52 +118,85 @@ When monad is introduced,
 Most of these functions are pre-defined.
 For example, $searchCtx$, $updateCtx$ and $restoreCtx$ are monadic meta-functions,
  equality checking $(=)$ and substitution are pure meta-functions.
-Interestingly, as the result, the use of monad in the body of rules is implicit,
+The meta-functions represent primitive operations, and we assume that users can always understand their meaning.
+Interestingly, in our meta-language, the use of monad in the body of rules is implicit,
  where $return$ or $bind$ need not be written explicitly.
+An expression variable with sort $m~s$ is not allowed.
+As a result, the method to tell if a binding is pure is by checking whether the bone is a general expression.
 
 \subsubsection{Language $L$ Defined in Meta-Language}
 A \textit{Language} $L$ consists of a set of program sorts $S_p$;
  a set of language constructs $C$ with signatures;
  a set of interpretations $H$ with rules;
  a set of meta-functions $F$, seprerated by monadic ones $F_m$ and pure ones $F_p$.
+
 In particular, in \STLC and its extensions, $S_p=\{\Exp,\Type\}$.
 $H$ can be seperated into a set of evaluation rules $R_{\mE}$ and a set of typing rules $R_{\mT}$,
- where $sig(\mE)=\Exp->m_1~\mE$ and $sig(\mT)=\Exp->m_2~\mT$.
+ where $sig(\mE)=\Exp->m_1~\Exp$ and $sig(\mT)=\Exp->m_2~\Type$.
 Substitution, as a pure meta-function, is divided from $F_p$ and described as a set of substitution rules $R_{subst}$,
  whose definition is defined by develops.
+The signature of substitute is $sig(subst)=(\Exp,\Id,\Exp)->\Exp$.
+In the latter, a language will be defined as follows:
 \[ L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F_p, F_m \rangle \]
-% Fig. shows an example of STLC definition in our meta-language.
+
+\subsubsection{Semantic of Meta-Language.}
+
+In this section, we present the semantic of our meta-language.
+We start by the pure computation.
+Given a closed expression $\cexp$ in language $L$, for an interpretation $h$,
+ whose sort is $s_1 -> s_2$, if $sort(\cexp)=s_1$, 
+ then $h(\cexp)$ will be interpreted as a closed expression of sort $s_2$.
+For example, an expression is interpreted as a value if $h$ is evaluation, written as $\cexp -> v$.
+Here we use $v$ for the result of interpretation, which is a closed expression itself.
+After monad is introduced, side effects can be embraced by labels in transformation \cite{msos}.
+The operational semantics of meta-language are given in Fig. \ref{fig:seman-meta}.
+\todo{Explain this in detail?}
+
+\begin{figure}
+  \begin{gather*}
+    \inference[Base]{}{\mexp_b \lr \mexp_b} \\
+    \inference[PureFun]{\mexp'_1 \lr v_1 ~\cdots~ \mexp'_n \lr v_n & v=f_p(v_1\cdots v_n)}{f_p(\mexp'_1\cdots \mexp'_n) \lr v} \\
+    \inference[Rec]{\mexp' \lr v_1 & h(v_1) \rr{X} v}{h(\mexp) \rr{X} v} \\
+    \inference[MonadicFun]{\mexp'_1 \lr v_1 ~\cdots~ \mexp'_n \lr v_n & f_m(v_1\cdots v_n) \rr{X} v}{f_m(\mexp'_1\cdots \mexp'_n) \rr{X} v} \\
+    \inference[LetIn]{b_1 \rr{X_1} v_1 & Σ=\mathit{match}_p\ (v_1,pat) & Σ(b_2) \rr{X_2} v_2}{\Let{pat}{b_1} b_2 \rr{X_1;X_2} v_2} \\
+    \inference[Branch]{b\rr{X_1} v & \text{FAIL}=\mathit{match}_{br}(v,br_i)_{i\in [1..k-1]} & 
+      Σ=\mathit{match}_{br}(v,br_k) & Σ(body_{br}(br_k)) \rr{X_2} v_k}
+      {b:(br_1\cdots br_n) \rr{X_1;X_2} v_k}
+  \end{gather*}
+  \caption{Semantics of Meta-Language}
+  \label{fig:seman-meta}
+\end{figure}
 
 % \begin{figure}
-%   \begin{align*}
-%     S_p & = \{ \Exp, \Type \} \\
-%     H & = \{ \mathcal{E}: \Exp->\Exp, \mathcal{T}: \Exp->State~CtxStack~\Type \} \\
-%     F_m & = \{ searchCtx, updateCtx, restoreCtx \} \\
-%     F_p & = \{ (=), subst \}
-%   \end{align*}
+%   \begin{gather*}
+%     \inference[Var]{ρ(\mexp_x)=v}{\mexp_x \rr{\{ρ,...\}} v} \qquad
+%     \inference[Base]{}{\mexp_b \lr \mexp_b} \\
+%     \inference[PureFun]{\mexp'_1 \rr{\{ρ,...\}} v_1 ~\cdots~ \mexp'_n \rr{\{ρ,...\}} v_n & v=f_p(v_1\cdots v_n)}{f_p(\mexp'_1\cdots \mexp'_n) \rr{\{ρ,...\}} v} \\
+%     \inference[Rec]{\mexp' \rr{\{ρ,...\}} v_1 & h(v_1) \rr{\{ρ,σ,σ'\}} v}{h(\mexp) \rr{\{ρ,σ,σ'\}} v} \\
+%     \inference[MonadicFun]{\mexp'_1 \rr{\{ρ,...\}} v_1 ~\cdots~ \mexp'_n \rr{\{ρ,...\}} v_n & f_m(v_1\cdots v_n) \rr{\{ρ,σ,σ'\}} v}{f_m(\mexp'_1\cdots \mexp'_n) \rr{\{ρ,σ,σ'\}} v} \\
+%     \inference[LetIn]{b_1 \rr{\{ρ,σ,σ'\}} v_1 & pat\mapsto v_1\ne\emptyset & b_2 \rr{\{ρ[pat\mapsto v_1],σ',σ''\}} v_2}{\Let{pat}{b_1} b_2 \rr{\{ρ,σ,σ''\}} v_2} \\
+%     \inference[Branch]{b\rr{\{ρ,σ,σ'\}} v & \mathit{match\mhyphen fail}\ (v,br_i)_{i\in [1..k-1]} & \mathit{match}\ (v,br_k) \\ 
+%       br_k=pat|>b_k & b_k \rr{\{ρ[pat\mapsto v],σ',σ''\}} v_k}
+%       {b:(br_1\cdots br_n) \rr{\{ρ,σ,σ''\}} v_k}
+%   \end{gather*}
+%   \caption{Semantics of Meta-Language}
+%   \label{fig:seman-meta}
 % \end{figure}
 
-\subsubsection{Code Generation.}
 
+\subsection{Host Languages}\label{sec:m-host}
 
-\subsection{Host Languages}
-
-Our host language is designed to define DSL.
-For the purpose of semantic derivation, 
- each language constructs of the host language should have a structural computation.
- the evaluation of an expression $c~e_1\cdots e_n: \Exp$ should be an operation of the evaluation of each subexpression $e_i$ if $e_i:\Exp$.
-If some $e_i$ is used without evaluation, 
- or some expression being computed is not $e_i$,
- then the rule is not structural.
-The evaluation rules of $\<if>$ and $\<and>$ are structural.
-Structural evaluation rules are the key to ensure the abstraction in semantic derivation.
-In other words, any language construct with unstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic derivation.
-
-In the case of STLC, the evaluation rules of lambda abstraction and application are not structural.
-The former uses the $e_i$ not evaluated, 
- while the latter evaluates an expression containing substitution.
-We rewrite these two rules according to the meta-language definition above as follows, 
- where $subst \in F_p$:
+Remember that our host language is designed to define DSL.
+In semantic derivation, the rules can be expanded recursively,
+ because the original rules contain the evaluation or typing of subexpressions.
+Therefore, the rules of the language constructs of the host language should be \textit{structural}:
+ the evaluation of an expression $e=c(e_i,...)$ with sort $\Exp$ should be a computation of the value of each subexpression $e_i$ where $sort(e_i)=\Exp$.
+If some subexpression $e_i$ is used without evaluation, 
+ or some expression being evaluated is not $e_i$,
+ then the rule is not structural.In the case of \STLC, the evaluation rules of $\<if>$ and $\<and>$ are structural.
+And the evaluation rules of lambda abstraction and application are not structural.
+The former uses the $e_i$ not evaluated, while the latter evaluates an expression containing substitution.
+We rewrite these rules in the style of meta-language, where unstructural parts are highlighted:
 % weak alert
 \newcommand{\wkalt}[1]{\colorbox{lightgray}{#1}}
 \begin{align*}
@@ -173,6 +204,15 @@ We rewrite these two rules according to the meta-language definition above as fo
   \EE{\<App>~e_1~e_2} & \cqq \Let{\<Abs>~x~t~e}{\EE{e_1}} \Let{v_2}{\EE{e_2}} \wkalt{$\EE{subst~e~x~v_2}$}.
 \end{align*}
 
-\todo{Safety? cannot be expressed by big-step semantics}
+\begin{definition}
+A rule $h(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if
+\begin{itemize}
+  \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
+   $\mexp_{x_i}$ is not used to be matched, as an argument in any meta-function, applied by any constructor, or as the result value in $b$;
+  \item all the expressions that are computed recursively $h(\mexp)$ in $b$ must be $\mexp_{x_i}$.
+\end{itemize}
+\end{definition}
 
-
+Structural evaluation rules are the key to ensure the abstraction in semantic derivation.
+In other words, any language construct with unstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic derivation.
+The typing rules, fortunately, are all structural in \STLC.
