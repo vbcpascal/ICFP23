@@ -1,32 +1,7 @@
-\section{Case Studies}\label{sec:eval}
+\section{Case Study}\label{sec:eval}
 
-In this section, we evaluate Osazone by implementing some languages based on \STLC. 
-We start with meta-extensions on \STLC.
-Language constructs pairs, sums, fixpoints and lists,
- introduced in Chapter 11 of Types and Programming Languages\cite{tapl} are testes.
-And let bindings and ascription are implemented by translation rules.
-We name the new language as \STLCex.
-In this language, we will talk about the impact of fixpoints on abstraction.
-
-Then, we introduce reference by monad extension, getting \textsc{Ref}.
-Taking \textsc{Ref} as the host language,
- we implement an imperative language \textsc{Imp}.
-The point we should care about in \textsc{Imp} is that,
- recursive translation rules are declared in $\<while>$.
-As an extension of our framework,
- we will discuss weak-abstraction semantic derivation.
-
-Then, we make \textsc{Ref} support I/O.
-Unlike other monads we have discussed, IO monad, however,
- cannot be used as a monad transformer, which can be the base monad only.
-We will explain our strategies in this language \RefIO.
-
-Finally, based on \textsc{Ref}$_{IO}$,
- we implement a DSL named \textsc{Robot}.
-The language assumes that a robot is located at some starting coordinates,
- and users can control its movement, or print out its position with commands.
-In this example, We will talk about how to access ``global variables'' in the translation rules.
-
+In this section, we evaluate Osazone by an example, with seven language implemented.
+We aim to show how the language is progressively extended and specialized by translation rules.
 The languages discussed in this section and their relation are shown in the Fig. \ref{fig:langs},
  where horizontal arrows represent meta-extensions and monad extensions,
  and vertical arrows stand for specification by translation rules.
@@ -36,6 +11,28 @@ The languages discussed in this section and their relation are shown in the Fig.
   \caption{Languages for Examples}
   \label{fig:langs}
 \end{figure}
+
+%  implementing some languages based on \STLC. 
+We start with meta-extensions on \STLC.
+Language constructs pairs, sums, fixpoints and lists,
+ introduced in Chapter 11 of Types and Programming Languages\cite{tapl} are tested.
+And let bindings and ascription are implemented by translation rules.
+We name the new language as \STLCex.
+% In this language, we will talk about the impact of fixpoints on abstraction.
+
+Then, we introduce reference by monad extension, getting \textsc{Ref}.
+Taking \textsc{Ref} as the host language,
+ we implement an imperative language \textsc{Imp}.
+% The point we should care about in \textsc{Imp} is that,
+%  recursive translation rules are declared in $\<while>$.
+% As an extension of our framework,
+%  we will discuss weak-abstraction semantic derivation.
+
+After that, we make \textsc{Ref} support I/O, getting \RefIO.
+Based on \RefIO, we implement a DSL named \textsc{Robot}.
+The language assumes that a robot is located at some starting coordinates,
+ and users can control its movement, or print out its position with commands.
+In this example, We will talk about how to access ``global variables'' in the translation rules.
 
 \subsection{\STLCex: Fixpoint}
 
@@ -121,28 +118,6 @@ When a language construct is translated to $\<while>$,
 For example, $\<for>$ can be defined as:
 \[ \<for>~(e_1;e_2;e_3)~\<do>~e_4 => e_1;\<while>~e_2~\<do>~(e_4;e_3)~\<end> \]
 
-
-\subsection{\RefIO: IO Monad}
-
-As mentioned above, due to the absence of IO monad transformer,
- we cannot support I/O with the method in section \ref{sec:dsl-monad}.
-For this, we provide two methods.
-(1) Writer monad is valid to simulate outputs, while inputs are not supported.
-(2) Always put an identity monad or IO monad at bottom, with other monads layered on top.
-When I/O is required, replace identity monad with IO monad.
-Then lift I/O functions, with other monadic meta-functions unchanged.
-
-For example, in \STLC, the signature of evaluation is expressed as $\mE: \Exp -> \Exp$.
-And now the signature is changed to $\mE: \Exp -> \mathit{Identity}~\Exp$.
-An additional benefit of this is that when introducing a new monad,
- we do not need to distinguish whether it is a base monad or not,
- so that all the monadic meta-functions are lifted by the $\mathit{lift}$ operator directly.
-Then, the signature of evaluation in \textsc{Ref} is transformed into:
-\[ \mathcal{E} : \Exp -> \mathit{StateT~Store~Identity}~\Exp \]
-To support I/O, the signature of evaluation in the new language becomes:
-\[ \mathcal{E} : \Exp -> \mathit{StateT~Store~IO}~\Exp. \]
-And meta-functions provided by IO monad are lifted once:
-\[ \lifted{\<print>}~e = \mathit{lift}~(\<print>~e). \]
 
 \subsection{\textsc{Robot}: Limitation on Global Variables}
 

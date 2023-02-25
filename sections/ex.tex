@@ -1,9 +1,14 @@
-\section{Host Language Extension}
+\section{Host Language Extension}\label{sec:ex}
 
+We discuss how to extend the host language when it is not expressive enough.
+The extensions can be seperated into two types:
+ meta-extensions and monadic extensions.
+The former adds new vocabularies to the host language,
+ for example adding integers to \STLC.
+Meta-language extensions are similar to defining a host language.
+The latter is adding new features to the meta-language by monad like reference.
+The original language definitions can be kept intact when introducing new language features.
 
-In this section, we will illustrate the three steps to define DSLs one by one.
-The distinction between monadic and pure meta-functions is reflected in the monad extension
-Also, stronger restrictions are imposed on the translation rules.
 
 \subsection{Meta-Extensions}
 
@@ -12,16 +17,13 @@ Meta-extensions are direct extensions to the host language by
 This expansion has the following requirements: for each $c \in C_n$,
  (1) $sort(c) \in S_p$, i.e. $\Exp$ or $\Type$;
  (2) if $sort(c)=\Exp$, then the evaluation, typing and substitution rules should be specified.
-%  (3) if there exists $e_1\cdots e_n$ such that $c~e_1\cdots c_n$,  
 
 \begin{example}
   Consider integers are expected to be supported via literals.
   New constructors, $\<Lit>$, $\<Plus>$, $\<Lt>$ and $\<Eq>$ as $\Exp$, $\<Int>$ as $\Type$, will be added.
   Fig. \ref{fig:int} shows the formal definition of integer extension, 
-  where $F_n=\{(+),(<)\}$, both of them are pure meta-functions.
+  where $F_n=\{(=),(+),(<)\}$, all of them are pure meta-functions.
 \end{example}
-
-% \todo{function Substitution will be modified after adding new constructors}
 
 \begin{figure}
   \begin{align*}
@@ -54,23 +56,32 @@ This expansion has the following requirements: for each $c \in C_n$,
 
 \subsection{Monad Extensions}\label{sec:dsl-monad}
 
-As it was mentioned above, monad extension is the technique for side effects in computation without changing the original semantic definition.
+Monad extension \cite{monad-1,monad-2} is the technique for side effects in computation without changing the original semantic definition.
 By monad $m$, various language features can be defined, such as environment, store, nondeterminism, I/O etc.
-And to put these together in a modular way, we use a mechanism called \textit{monad transformers}, ranged by $m_t$.
-In this section, we will put reference into \STLC, named \textsc{Ref}.
-Both the change of pure computation to those including side effects via monad (in evaluation), and the expansion of language features via monad transformer (in typing) will be explained.
+In order to put these together in a modular way, we use a mechanism called \textit{monad transformers} \cite{monad-tr}, ranged over by $m_t$.
+In this section, we will introduce reference to \STLC, named \textsc{Ref}.
+Both the change of pure computation to those including side effects via monad (in evaluation),
+ and the composition of language features via monad transformer (in typing) will be explained.
+Then, we aim to make \textsc{Ref} support I/O named \RefIO.
+Unlike other monads, IO monad cannot be used as a monad transformer,
+ which can be the base monad only.
+We will explain our strategies in the language \RefIO.
 
 \subsubsection{Evaluation with Store}
+
 Monad extensions are often accompanied by meta-extensions.
-The basic language constructs for reference are allocation, dereferencing and assignment.
-For reading convenience, we use expression with syntax like $ref~e$, $!e$ and $e_1:=e_2$.
+The basic language constructs of reference are allocation $ref~e$, dereferencing $!e$ and assignment $e_1:=e_2$.
 To carry through the modification on store, 
  the signature of $\mathcal{E}$ changes from $\Exp->\Exp$,
  to $\Exp->(\mathit{State~Store})~\Exp$, abbreviated as $M_e~\Exp$,
  where $\mathit{Store}$ maps locations to values.
-\[ \mathcal{E} : \Exp -> \Exp ~\wkalt{\monad \mathit{State~Store} \as M_e} \]
+% In our meta-language, it is written as:
+\[ \mathcal{E} : \Exp -> \wkalt{\mathit{State~Store}}~\Exp \]
+% \[ \mathcal{E} : \Exp -> \Exp ~\wkalt{\monad \mathit{State~Store} \as M_e} \]
+
 An abstract index of store is a location (used as a base sort $Loc$).
-A reference will be evaluated to a location expression, constructed by $\<Loc>:Loc->\Exp$.
+An allocation will be evaluated to a location expression.
+A location in \textsc{Ref} is written as $l$ directly, constructed by $\<Loc>$ whose sort is $Loc->\Exp$.
 New (monadic) meta-functions are also necessary for evaluation rules:
 \begin{itemize}
   \item $\newLoc:M_e~Loc$ returns a newly allocated location;
@@ -92,7 +103,7 @@ Given these meta-functions, Fig. \ref{fig:ref_eval} shows the evaluation rules o
 
 When introducing monad, pure meta-functions keep the original definition, 
  while monadic meta-functions $f_m:(s_1\cdots s_n)->s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->m~s$ for type correctness, defined by:
-\[ \lifted{f_m}~args = \return~(f_m~args). \]
+\[ \lifted{f_m}(\mexp_1\cdots \mexp_n) = \return~(f_m(\mexp_1\cdots \mexp_n)). \]
 
 \subsubsection{Typing with Store}
 If the content of a location has type $t$, then the type of the location is $Ref~t$,
@@ -103,7 +114,12 @@ To extend the store typing which records the association between location and th
  to $\Exp->\mathit{ReaderT}~Store_t~(State~CtxStack)~\Type$,
  where $Store_t$ maps locations to types,
  and $ReaderT~Store_t$ is a monad transformer.
-\[ \mathcal{T} : \Exp -> \Type ~\monad \mathit{State~CtxStack}, \wkalt{\mathit{Reader~Store}_t} \as M_t \]
+\[ \mathcal{T} : \Exp -> \wkalt{\mathit{ReaderT~Store}_t}~(\mathit{State~CtxStack})~\Type \]
+
+% In our meta-language, we add the newly introduced monad on the right of the declaration
+%  and do not need to explicitly state this monad is used as a monad transformer. 
+% We restrict the monad used by the user to be pre-provided by our framework.
+
 Monad transformers allow us touch high-level language features, but skill keep the access to low-level details.
 Now, for example, we can use both the meta-functions associated with store typing like $ask$ and the meta-functions provided by Context like $searchCtx$.
 Fig. \ref{fig:ref_type} gives the typing rules of language constructs in \textsc{Ref}.
@@ -120,9 +136,28 @@ Fig. \ref{fig:ref_type} gives the typing rules of language constructs in \textsc
 \end{figure} 
 
 Likewise, pure meta-functions remains unchanged,
- and all the monadic meta-functions $f_m:(s_1\cdots s_n)->m~s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->(m_t~m)~s$ by $\mathit{lift}$ operation\cite{todo},
- so that the type rule of lambda abstraction in \textsc{Ref} will be written as:
+ and all the monadic meta-functions $f_m:(s_1\cdots s_n)->m~s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->(m_t~m)~s$ by $\mathit{lift}$ operation.
+For example, the typing rule of lambda abstraction in \textsc{Ref} will be written as:
 \begin{align*}
   \TT{λx:t.e}   & \cqq \lt~\_=\lifted{updateCtx}~x~t;~\lt~t'=\TT{e}; \\
                 & \hspace{13pt} \lt~\_=\lifted{restoreCtx};~t->t'.
 \end{align*}
+
+\subsubsection{IO Monad}
+
+As mentioned, due to the absence of IO monad transformer, we cannot support I/O as the above approach.
+For this, we always put an identity monad or IO monad at bottom, with other monads layered on top.
+When I/O is required, replace identity monad with IO monad.
+Then lift I/O functions, with other monadic meta-functions unchanged.
+
+For example, in \STLC, the signature of evaluation is expressed as $\mE: \Exp -> \Exp$.
+And now the signature is changed to $\mE: \Exp -> \mathit{Identity}~\Exp$.
+% An additional benefit of this is that when introducing a new monad,
+%  we do not need to distinguish whether it is a base monad or not,
+%  so that all the monadic meta-functions are lifted by the $\mathit{lift}$ operator directly.
+Then, the signature of evaluation in \textsc{Ref} is transformed into:
+\[ \mathcal{E} : \Exp -> \mathit{StateT~Store~Identity}~\Exp \]
+To support I/O, the signature of evaluation in \RefIO{} becomes:
+\[ \mathcal{E} : \Exp -> \mathit{StateT~Store~IO}~\Exp. \]
+And meta-functions provided by IO monad are lifted once:
+\[ \lifted{\<print>}~e = \mathit{lift}~(\<print>~e). \]
