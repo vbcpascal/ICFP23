@@ -1,0 +1,21 @@
+\begin{tikzpicture}[x=6pt,y=6pt,yscale=1,xscale=1]
+
+\draw[dashed] (-14,5) -- (23,5);
+\node[align=left,fill=white] at (27,5) {Abstraction\\Barrier};
+
+\node[draw] (H) at (0,0) {Host Language};
+\node[draw] (D1) at (-10,10) {DSL$_1$};
+\node[draw] (D2) at (0,10) {DSL$_2$};
+\node[draw] (D3) at (10,10) {DSL$_3$};
+
+% \node[align=left,text=magenta] (M1) at (14,0) {Semantics, Typing Rules\\of Host Language}; 
+\node[align=center,text=magenta] (M1) at (18,0) {Semantics,\\ Typing Rules}; 
+\node[align=center,text=magenta] (M2) at (18,10) {Semantics,\\ Typing Rules}; 
+ 
+\draw[->] (D1) -> (H);
+\draw[->] (D3) -> (H);
+\draw[->] (D2) -> node[fill=white] {translation rules} (H);
+% \draw[->,thick,magenta] (9,2) -> node[right=1em] {lifting} (15,8);
+\draw[->,thick,magenta] (18,2) -> node[left,fill=white] {lifting} (18,8);
+
+\end{tikzpicture}

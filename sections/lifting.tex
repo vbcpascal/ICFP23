@@ -1,0 +1,99 @@
+\section{Translation Rules and Semantics Lifting}
+
+In this section, we describe the most important part of our method.
+We assume that the DSL is defined based on a sufficiently powerful host language.
+In the following, we formalize and impose some requirements on the translation rules.
+Then, we present the semantics lifting algorithm formally with examples. 
+As basic properties of semantic lifting, correctness and abstraction are proved in \todo{}.
+\todo{}
+
+\subsection{Translation Rules}
+
+% After defining a fully featured host language,
+%  translation rules are designed to specialize the language constructs of the DSL.
+% The difference between a translation rule and a macro is that it is not provided by the host language, 
+%  but is an abstraction outside the language.
+% The distinction between translation rules and syntactic sugar is that it not only simplifies the syntax, 
+%  but also can be used to describe more operations.
+
+A translation rule $tr$ defines a new constructor $c_n$ in meta-language, with shape 
+\[ c_n~\mexp_{x_1}\cdots \mexp_{x_n} => \mexp \]
+ where free expression variables in $\mexp$ must appear in LHS.
+We use $LHS(tr)$ and $RHS(tr)$ to denote the expressions on either side of $=>$.
+We call constructors defined by translation rules \textit{surface constructors}.
+If a closed expression $\cexp$ is constructed by $c_n$, define by $tr$,
+ then there exists an environment $Σ$ satisfying $Σ(LHS(tr))=\cexp$,
+ and $Σ(RHS(tr))$ is called \textit{one-step translation} (or desugaring), 
+ written as $\ds{\cexp}$.
+\textit{Total translation} is also pretty useful,
+ which translates expressions of surface constructors recursively.
+But if a rule translates surface constructor $c_n$ to itself, 
+ i.e., a recursive translation rule,
+ the total translation is not terminated.
+Therefore, we propose the following requirement.
+
+\begin{requirement}\label{req:no-recursion}
+For a translation rule $tr$, constructors in $RHS(tr)$ must be those of host language, or surface constructors defined earlier.
+\end{requirement}
+
+Formally, total translation of a closed expression $\DS{\cexp}$ is defined as:
+\begin{align*}
+  \DS{\mexp_b} & = \mexp_b \\
+  \DS{c_n~\cexp_1\cdots \cexp_n} & = \DS{\ds{c_n~\cexp_1\cdots \cexp_n}} & \text{if $c_n$ is a surface constructor} \\
+  \DS{c_h~\cexp_1\cdots \cexp_n} & = c_h~\DS{\cexp_1}\cdots\DS{\cexp_n} & \text{if $c_h$ is a host constructor} 
+\end{align*}
+
+For example, given an expression $\<true>~\<and>~(\<false>~\<or>~\<true>)$ of \textsc{Bool}, then:
+\begin{align*}
+  \ds{\<true>~\<and>~(\<false>~\<or>~\<true>)} & = 
+    \<if>~\<true>~(\<false>~\<or>~\<true>)~\<false> \\
+  \DS{\<true>~\<and>~(\<false>~\<or>~\<true>)} & = 
+    \<if>~\<true>~(\<if>~\<false>~\<true>~\<true>)~\<false>
+\end{align*}
+
+\todo{}
+
+\begin{assumption}\label{asm:fun-ds}
+  \begin{gather*}
+    f_p(\mexp_1\cdots \mexp_n)=v \quad\miff\quad f_p(\DS{\mexp_1}\cdots\DS{\mexp_n})=\DS{v} \\
+    f_m(\mexp_1\cdots \mexp_n)\rr{X} v \quad\miff\quad f_m(\DS{\mexp_1}\cdots\DS{\mexp_n}) \rr{X} \DS{v} \\
+  \end{gather*}
+\end{assumption}
+
+\subsubsection{Variable Scope in Translation Rules}
+
+We have very strict requirements for the scope of variables in the translation rules.
+Variables defined in the rule cannot be leaked,
+ and external variables may not be captured in the rule.
+These translation rules are not premitted:
+\begin{align*}
+  \mathit{leaked}~e & => \<let>~x:\<int> =1~\<in>~e \\
+  \mathit{captured}~e & => \<if>~x~\<true>~e 
+\end{align*}
+The former tries to bind a constant in $x$ for use in e, like $\mathit{leaked}~(x+1)$;
+and the latter attempts to get the value of $x$ in the current environment, like $\<let>~x=\<true>~\<in>~\mathit{captured}~\<false>$.
+From the user's point of view, it is weird to use variables that are not explicitly defined and use variables but not explicitly stated.
+And in the semantic derivation, the variables that are not substituted will be stuck.
+Taking all these considerations into account, we give the following requirements.
+
+\begin{requirement}\label{req:close}
+  A translation rule must be \textit{closed}: any variable used in RHS has a local binding.
+\end{requirement}
+
+\subsubsection{Hygiene Problem}
+
+Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
+ variable bindings are possible to be hidden by macros, which we also have to face.
+For example, we define a translation rule $or'$ via $\<let>$:
+\[ e_1~or'~e_2 => \<let>~``x"=e_1~\<in>~\<if>~``x"~``x"~e_2 \]
+where $``x"$ is a literal identifier. 
+Then the expression $\<let>~x=\<false>~\<in>~(\<true>~or'~x)$ will be totally translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
+Fortunately, thanks to the requirement \ref{req:close}, the variables in the RHS must be locally bound. 
+Therefore, we can modify the names of variables safely.
+\textit{We treat literals variables bound in the RHS as mutable and always fresh.}
+We use $\texttt{@}$ to denote fresh variables, and $or'$ will be written as:
+\[ e_1~or'~e_2 => \<let>~\texttt{@x}=e_1~\<in>~\<if>~\texttt{@x}~\texttt{@x}~e_2. \]
+
+\subsubsection{Substitution Rules}
+
+

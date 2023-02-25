@@ -1,55 +1,5 @@
 \section{Overview}
 
-In this section, we will outline our approach with an example.
-The following topics will be talked about:
-(1) how host language developers define a language (\STLC) with the meta-language,
-(2) how DSL developers define a DSL (\textsc{Bool}) by language extensions and translation rules,
-and (3) how DSL become standalone by semantic derivation in our framework.
-
-\subsection{Define Host Language via Meta-Language}
-
-Skeletal semantics \cite{skeleton} can be used to describe concrete and abstract semantics in a structural way.
-A skeleton body is defined by a sequence of bones.
-A bone is either recursive computations (hooks),
- meta-operations (filters), or different pathways (branches).
-Our meta-language is based on Skeleton, but for different goals.
-We replace branch and merging with pattern matching,
- and replace filters with meta-functions.
-For example, consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_2$ and $e_3$,
- whose big-step operational semantics are defined using two seperate rules.
-\[
-  \inference{e_1 \Da \<true> & e_2 \Da v_2}
-  {\<if>~e_1~e_2~e_3 \Da v_2} \quad
-  \inference{e_1 \Da \<false> & e_3 \Da v_3}
-  {\<if>~e_1~e_2~e_3 \Da v_3}
-\]
-In our meta-language, the evaluation rule of $\<if>$ is given by
-\[
-  \EE{\<if>~e_1~e_2~e_3} \cqq
-  \EE{e_1}: \branch{
-    \<true>  |> \EE{e_2} \\&
-    \<false> |> \EE{e_3}
-  }.
-\]
-Here, $\EE{e_1}$ identifies the evaluation of subexpression $e_1$,
- whose result is used to select a specific branch by pattern matching (after the colon).
-Then, subsequent computations are processed (after the triangle).
-If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate; the same for $\<false>$.
-The typing rule of $\<if>$ can be defined in a similar way:
-\[
-  \TT{\<if>~e_1~e_2~e_3} \cqq
-    \lt~\<bool> = \TT{e_1};~
-    \lt~t_2 = \TT{e_2};~
-  \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)
-\]
-In order to make the structure clear,
-we use $let$ as a syntactic sugar to represent a pattern matching with unique branch.
-The type of $e_1$ is required to be $\<bool>$.
-The matching of $e_3$ has a side condition (named \textit{guard} in Haskell),
-which requires $t_2$ to equal $t_3$.
-Note that the evaluation and typing rules of $\<if>$ are unique,
- which guarantees the determinacy in derivation.
- 
 \begin{figure}[t!]
   \begin{align*}
     e \in \Exp  & ::= \<true> \mid \<false> \mid \<if>~e_1~e_2~e_3 \\
@@ -62,153 +12,99 @@ Note that the evaluation and typing rules of $\<if>$ are unique,
 
 \begin{figure}[t!]
   \begin{align*}
-    \EE{\<true>}           & \cqq \<true>                                              \\
-    \EE{\<false>}          & \cqq \<false>                                             \\
-    \EE{\<if>~e_1~e_2~e_3} & \cqq \EE{e_1}: \branch{
-      \<true>  |> \EE{e_2}                                                               \\&
-      \<false> |> \EE{e_3}
-    }                                                                                  \\
-    \EE{λx:t.e}            & \cqq λx:t.e                                               \\
-    \EE{e_1~e_2}           & \cqq \lt~λx:t.e=\EE{e_1};~\lt~v_2=\EE{e_2};~\EE{e[v_2/x]}
-  \end{align*}
-  \caption{Semantics of \STLC}
-  \label{fig:stlc}
-\end{figure}
-
-The syntax of \STLC{} is given in Fig. \ref{fig:stlc_syntax}.
-And the semantics of \STLC{} is given in Fig. \ref{fig:stlc}.
-But meta-language focus on the semantics rather than syntax.
-We need to think of each item of syntax as a language construct.
-In the evaluation rules, we can observe that:
-(1) the evaluation of values gets themselves,
- which is consistent with the big-step operational semantics,
-(2) and we use substitution in application.
-In our meta-language, substitution is considered as a special meta-function.
-The substitution rules of language constructs should be specified by developers, omitted here.
-
-We can think of evaluation $\mathcal{E}$ as a function of $\Exp -> \Exp$.
-Then the type $\mathcal{T}$ should be a function of $\Exp -> \Type$.
-But a context is necessary when typing lambda abstraction.
-Instead of changing $\mathcal{T}$ to $\Exp -> Ctx -> \Type$,
-we introduce state monad to describe context modification for modularity.
-So that $\mathcal{T}$ is a function of $\Exp -> State~CtxStack~\Type$.
-\todo{How to explain this monad more clearly?}
-\[
-  \TT{λx:t.e} \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e};~\lt~\_=restoreCtx;~t->t'
-\]
-
-With the Introduction of monad, the type rule of $\<if>$ remains unchanged.
-We can also keep the original semantic description intact
-when subsequent DSL users extend the host language.
-The type rules of \STLC is given in Fig. \ref{fig:stlc_type}.
-
-\begin{figure}[t!]
-  \begin{align*}
-    \TT{\<true>}  & \cqq \<bool>  \\
-    \TT{\<false>} & \cqq \<bool>  \\
-    \TT{\<if>~e_1~e_2~e_3} & \cqq
-      \lt~\<bool> = \TT{e_1};~
-      \lt~t_2 = \TT{e_2};~
-      \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)   \\
-    \TT{x}        & \cqq searchCtx~x \\
-    \TT{λx:t.e}   & \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e}; \\
-                  & \hspace{13pt} \lt~\_=restoreCtx;~t->t' \\
-    \TT{e_1~e_2}  & \cqq \Let{t_1->t}{\TT{e_1}} \TT{e_2}:(t_2\mid t_1=t_2|>t)
-  \end{align*}
-  \caption{Type Rules of \STLC}
-  \label{fig:stlc_type}
-\end{figure}
-
-\subsection{Define the DSL}
-
-Consider a task of implementing a DSL for boolean computations, half adder and full adder, named \textsc{Bool}.
-\textsc{Bool} has some expressions like
-\begin{align*}
-  \<true>~\<and>~(\<false>~\<xor>~\<true>) & \equiv \<true> \\ 
-  \<halfa>~\<true>~\<false> & \equiv (\<false>, \<true>).
-\end{align*}
-Since our language extends on the host language,
- all the syntax of \STLC is also preserved in the DSL.
-The syntax of \textsc{Bool} is shown in Fig. \ref{fig:bool_syntax}
-Remember that we are more concerned with semantics than syntax, 
- and they are all treated as language constructs
- for which we need to define there evaluation and type rules.
-
-\begin{figure}[t!]
-  \begin{align*}
     e \in \Exp  & ::= \cdots \mid \<not>~e \mid e~\<and>~e \mid e~\<or>~e \\
-                & \quad \mid e~\<nand>~e \mid e~\<nor>~e \mid e~\<xor>~e \\
-                & \quad \mid \<halfa>~e~e \mid \<fulla>~e~e~e \\
-                & \quad \mid (e,e) \mid \<fst>~e \mid \<snd>~e \\
-    t \in \Type & ::= \cdots \mid t\times t
+                & \quad \mid e~\<nand>~e \mid e~\<nor>~e \mid e~\<xor>~e
   \end{align*}
   \caption{Syntax of \textsc{Bool}}
   \label{fig:bool_syntax}
 \end{figure}
 
-\paragraph{Extend the host language with meta-extension.}
-Half adder and full adder will get sum and carry as the results, 
-so pairs can be used to build compound data structures.
-Naturally, projection $\<fst>$ and $\<snd>$ are involved as $\Exp$,
-and product $t \times t$ is involved as $\Type$.
-Developers need to indicate the evaluation and type rules (and substitution rules) for each newly defined language constructs,
-just like defining the host language.
-What the developers need to provide is shown in Fig. \ref{fig:bool-meta-ex}.
-\begin{figure}[t!]
-  \begin{align*}
-    \EE{(e_1,e_2)} & \cqq \lt~v_1=\EE{e_1};~\lt~v_2=\EE{e_2};~(v_1,v_2) &
-    \TT{(e_1,e_2)} & \cqq \lt~t_1=\TT{e_1};~\lt~t_2=\TT{e_2};~t_1\times t_2 \\
-    \EE{\<fst>~e} & \cqq \lt~(v_1,\_)=\EE{e};~v_1 &
-    \TT{\<fst>~e} & \cqq \lt~(t_1,\_)=\TT{e};~t_1 \\
-    \EE{\<snd>~e} & \cqq \lt~(\_,v_2)=\EE{e};~v_2 &
-    \TT{\<snd>~e} & \cqq \lt~(\_,t_2)=\TT{e};~t_2
-  \end{align*}
-  \caption{Meta-Extension Rules for \textsc{Bool}}
-  \label{fig:bool-meta-ex}
-\end{figure}
+In this section, we will outline our approach with an example.
+And the following topics will be covered:
+(1) how DSL developers define a DSL (\textsc{Bool}) by translation rules;
+(2) how DSL becomes standalone by semantic lifting in our framework;
+and (3) how developers extend the host language by meta-extension.
 
-\paragraph{Specify the DSL with translation rules.}
-Unlike pairs, boolean operations like $\<and>$ can be directly define through $\<if>$ etc.
-Each translation rule has a LHS and a RHS, which are expressions containing pattern variables.
-Translation rules define the language constructs in the DSL,
- and we require that each such language construct is determined by a unique translation rule.
-Each pattern variable must be of a specific class, e.g. $\Exp$, $\Type$.
+Consider that we take \STLC{} (whose syntax is shown in Fig. \ref{fig:stlc_syntax}) as the host language, 
+ and implement a DSL for boolean computations, named \textsc{Bool}.
+Programs in \textsc{Bool} are constructed by boolean values and operations, like:
+\begin{align*}
+  \<true>~\<and>~(\<false>~\<xor>~\<true>) & \equiv \<true> \\ 
+  (not~\<true>)~\<nor>~\<false> & \equiv \<true>.
+  % \<halfa>~\<true>~\<false> & \equiv (\<false>, \<true>).
+\end{align*}
+The syntax of \textsc{Bool} is shown in Fig. \ref{fig:bool_syntax},
+ where the syntax of \STLC{} is preserved.
+And remember that syntax is just for readability.
+%  and they are all treated as language constructs
+%  for which we need to define there evaluation and type rules.
+
+\subsection{Define \textsc{Bool} with Translation Rules}\label{sec:ov-1}
+
+Boolean operations like $\<and>$ can be directly define by host language constructs like $\<if>$.
+Each translation rule defines a new language construct in DSL.
+And we require that each such language construct is determined by a unique translation rule.
+A translation rule, ranged over by $tr$, consists of a LHS and a RHS splitted by $=>$,
+ where LHS is an expression containing the new language construct and pattern variables;
+ and RHS is composed of host language constructs and pattern variables.
+Each pattern variable must be of a specific sort, such as $\Exp$, $\Type$.
 We use $e_i$ for $\Exp$, $t_i$ for $\Type$, $x$ for identifiers.
-\[ e_1~\<and>~e_2 => \<if>~e_1~e_2~\<false> \qquad \] % \text{where } e_1,e_2:\Exp \]
-% In this paper, $\Id$ is also a common class of pattern variable for variable binding, 
-% for example,
-% \[ \<let>~x:t=e_1~\<in>~e_2 => (λx:t.e_2)~e_1 \qquad \text{where } x:\Id;~t:\Type;~e_1,e_2:\Exp. \]
-Translation rules for the rest constructs in \textsc{Bool} are shown in Fig. \ref{fig:bool_tr}. %, leaving signatures of pattern variables out.
+Then, $\<and>$ can be defined as follows:
+\[ e_1~\<and>~e_2 => \<if>~e_1~e_2~\<false> \]
+
 \begin{figure}[t!]
   \begin{align*}
     \<not>~e        & => \<if>~e~\<false>~\<true> &
     e_1~\<or>~e_2   & => \<if>~e_1~\<true>~e_2 \\
     e_1~\<nand>~e_2 & => \<not>~(e_1~\<and>~e_2) &
-    e_1~\<nor>~e_2  & => \<not>~(e_1~\<or>~e_2)    
-  \end{align*}
-  \begin{align*}
-    e_1~\<xor>~e_2  & => (e_1~\<and>~\<not>~e_2)~\<or>~(\<not>~e_1~\<and>~e_2)  \\
-    \<halfa>~e_1~e_2 & => (e_1~\<xor>~e_2,e_1~\<and>~e_2) \\
-    \<fulla>~e_1~e_2~e_3 & => (e_1~\<xor>~e_2~\<xor>~e_3, (e_1~\<xor>~e_2)~\<or>~(e_3~\<and>~(e_1~\<xor>~e_2)))
+    e_1~\<nor>~e_2  & => \<not>~(e_1~\<or>~e_2) \\
+    \noalign{$e_1~\<xor>~e_2 => (e_1~\<and>~\<not>~e_2)~\<or>~(\<not>~e_1~\<and>~e_2)$}   
   \end{align*}
   \caption{Translation Rules for \textsc{Bool}}
-  \label{fig:bool_tr}
+  \label{fig:bool_tr1}
 \end{figure}
-In this example, we can notice that we can use not only the language constructs of the host language, 
- but also those defined by the meta-extension, 
- as well as the former translation rules.
-We will discuss the recursive translation rules later,
- and it will cause some trouble.
 
-\subsection{Language Lifting}
+Translation rules of the rest constructs in \textsc{Bool} are shown in Fig. \ref{fig:bool_tr1}.
+In the example of $\<nand>$, DSL construct $\<not>$ and $\<and>$ is used in the translation rule.
+This is permitted because we can think of these translation rules as being added to the host language one by one,
+ i.e. $\<nand>$ is defined in a host language that contains $\<and>$ and $\<not>$.
+But the translation rules defined recursively are illegal.
 
-Now it is time for our framework.
-For meta-extension, just add them to the set of rules. 
-For translation rules, we need to derive the evaluation and type rules for them.
+\subsection{Semantics Lifting}
 
-\paragraph{Derive the semantics.}
-Consider that for any $e_1$ and $e_2$, 
-the evaluation of $e_1~\<and>~e_2$ should be the same as $\<if>~e_1~e_2~\<false>$.
+Semantics lifting, or evaluation rules derivation,
+ takes the rules of host language written by meta-language and a translation rule as input,
+ and outputs the evaluation rules of the new language construct written by meta-language.
+Therefore, before discussing the semantics lifting algorithm,
+ we first briefly introduce the meta-language by example.
+Consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_2$ and $e_3$,
+ whose big-step operational semantics are defined using two seperate rules.
+\[
+  \inference{e_1 \Da \<true> & e_2 \Da v_2}
+  {\<if>~e_1~e_2~e_3 \Da v_2} \quad
+  \inference{e_1 \Da \<false> & e_3 \Da v_3}
+  {\<if>~e_1~e_2~e_3 \Da v_3}
+\]
+
+In our meta-language, the evaluation of $\<if>$ expression is given by the following single rule:
+\[
+  \EE{\<if>~e_1~e_2~e_3} \cqq
+  \EE{e_1}: \branch{
+    \<true>  |> \EE{e_2} \\&
+    \<false> |> \EE{e_3}
+  }.
+\]
+Here, $\EE{e_1}$ identifies the evaluation of subexpression $e_1$,
+ whose result is used to select a specific branch by pattern matching (after the colon).
+Then, subsequent computations are processed (after the triangle).
+If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate;
+ the same for $\<false>$.
+% All the evaluation rules can be expressed by recursive computations, meta-operations and branches.
+
+
+Now it is time for our framework. 
+Consider that for any $e_1$ and $e_2$,
+ the value of $e_1~\<and>~e_2$ should be the same as $\<if>~e_1~e_2~\<false>$.
 Hence, according to the translation rule and evaluation rules of the host language, we have
 \begin{align*}
   \EE{e_1~\<and>~e_2} 
@@ -231,51 +127,196 @@ That is, even if we remove $\<if>$ from the language, the $\<and>$ works fine.
 Also thanks to uniqueness of translation rules,
  the rules we derive for these new language constructs stay unique.
 
+The typing rule can also be derived in a similar way, and we will not discuss this in detail.
+%  and we will not elaborate on them here.
+
 \paragraph{Lambda Lifting.}
-As mentioned above, a language construct can be defined as a lambda abstraction by translation rules like $\<andf>$.
-The above method will result in
+As mentioned above, a language construct can be defined as a lambda abstraction by translation rules, like $\<andf>$.
+The above method will result in a rule which which breaks abstraction:
 \begin{align*}
   \EE{\<andf>} 
     & \cqq \EE{λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>} \\
     & = λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>, 
 \end{align*}
-which breaks abstraction.
-By converting $\<andf>$ to $\<and>$,
-the internal computation can be exposed.
-The approach of exposing parameters of the lambda abstraction in RHS of a translation rule $r$
- and transforming $r$ into a set of new translation rules, is called lambda lifting.
-In the above example, $\<andf>$ will be transformed into
+But by converting $\<andf>$ to $\<and>$, the internal computation can be exposed.
+The approach of exposing parameters of the lambda abstraction in RHS,
+ and transforming the rule into a set of new translation rules, is called lambda lifting.
+In the above example, $\<andf>$ will be transformed into the following two rules:
 \begin{align*}
   \mathit{and_f'}~e_1~e_2 & => \<if>~e_1~e_2~\<false> \\ 
   \<andf> & => λx:\<bool>.~λy:\<bool>.~\mathit{and_f'}~x~y.
 \end{align*}
-Thinking of $\mathit{andf'}$ as a language construct on the DSL,
+By thinking of $\mathit{andf'}$ as a language construct on the DSL,
  the abstraction property of $\<andf>$ is satisfied.
-\todo{strong abstraction, week abstraction}
-Lambda lifting is also valid for those translation rules for nested lambda abstractions.
+Lambda lifting plays an import role in translation rules with nested lambda abstractions.
 
-\paragraph{Derive the type rules.}
-The method of deriving evaluation rules can also be applied to type rules.
-For example, the type rule of $\<and>$ can be derived by
-\begin{align*}
-  \TT{e_1~\<and>~e_2}
-    & \cqq \TT{\<if>~e_1~e_2~\<false>} 
-        & \text{(Translation rule)} \\
-    & = \Let{\<bool>}{\TT{e_1}}
-        \Let{t_2}{\TT{e_2}}
-        \TT{\<false>}:(t_3 \mid t_2 = t_3 |> t_2)
-        & \text{(Evaluation rule of $\<if>$)} \\
-    & = \Let{\<bool>}{\TT{e_1}}
-        \Let{t_2}{\TT{e_2}}
-        \<bool>:(t_3 \mid t_2 = t_3 |> t_2)
-        & \text{(Evaluation rule of $\<false>$)} \\
-    & = \Let{\<bool>}{\TT{e_1}}
-        \Let{\<bool>}{\TT{e_2}}
-        \<bool>.
-        & \text{(Simplification)}
-\end{align*}
+% \paragraph{Derive the type rules.}
+% The method of deriving evaluation rules can also be applied to type rules.
+% For example, the type rule of $\<and>$ can be derived by
+% \begin{align*}
+%   \TT{e_1~\<and>~e_2}
+%     & \cqq \TT{\<if>~e_1~e_2~\<false>} 
+%         & \text{(Translation rule)} \\
+%     & = \Let{\<bool>}{\TT{e_1}}
+%         \Let{t_2}{\TT{e_2}}
+%         \TT{\<false>}:(t_3 \mid t_2 = t_3 |> t_2)
+%         & \text{(Evaluation rule of $\<if>$)} \\
+%     & = \Let{\<bool>}{\TT{e_1}}
+%         \Let{t_2}{\TT{e_2}}
+%         \<bool>:(t_3 \mid t_2 = t_3 |> t_2)
+%         & \text{(Evaluation rule of $\<false>$)} \\
+%     & = \Let{\<bool>}{\TT{e_1}}
+%         \Let{\<bool>}{\TT{e_2}}
+%         \<bool>.
+%         & \text{(Simplification)}
+% \end{align*}
 
-% \subsection*{Summary}
 
-% After these processes, the DSL developers implement \textsc{Bool} language.
-% \todo{talk about standalone}
+
+% \subsection{Define Host Language via Meta-Language}
+
+% Skeletal semantics \cite{skeleton} can be used to describe concrete and abstract semantics in a structural way.
+% A skeleton body is defined by a sequence of bones.
+% A bone is either recursive computations (hooks),
+%  meta-operations (filters), or different pathways (branches).
+% Our meta-language is based on Skeleton, but for different goals.
+% We replace branch and merging with pattern matching,
+%  and replace filters with meta-functions.
+% For example, consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_2$ and $e_3$,
+%  whose big-step operational semantics are defined using two seperate rules.
+% \[
+%   \inference{e_1 \Da \<true> & e_2 \Da v_2}
+%   {\<if>~e_1~e_2~e_3 \Da v_2} \quad
+%   \inference{e_1 \Da \<false> & e_3 \Da v_3}
+%   {\<if>~e_1~e_2~e_3 \Da v_3}
+% \]
+% In our meta-language, the evaluation rule of $\<if>$ is given by
+% \[
+%   \EE{\<if>~e_1~e_2~e_3} \cqq
+%   \EE{e_1}: \branch{
+%     \<true>  |> \EE{e_2} \\&
+%     \<false> |> \EE{e_3}
+%   }.
+% \]
+% Here, $\EE{e_1}$ identifies the evaluation of subexpression $e_1$,
+%  whose result is used to select a specific branch by pattern matching (after the colon).
+% Then, subsequent computations are processed (after the triangle).
+% If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate; the same for $\<false>$.
+% The typing rule of $\<if>$ can be defined in a similar way:
+% \[
+%   \TT{\<if>~e_1~e_2~e_3} \cqq
+%     \lt~\<bool> = \TT{e_1};~
+%     \lt~t_2 = \TT{e_2};~
+%   \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)
+% \]
+% In order to make the structure clear,
+% we use $let$ as a syntactic sugar to represent a pattern matching with unique branch.
+% The type of $e_1$ is required to be $\<bool>$.
+% The matching of $e_3$ has a side condition (named \textit{guard} in Haskell),
+% which requires $t_2$ to equal $t_3$.
+% Note that the evaluation and typing rules of $\<if>$ are unique,
+%  which guarantees the determinacy in derivation.
+ 
+
+
+% \begin{figure}[t!]
+%   \begin{align*}
+%     \EE{\<true>}           & \cqq \<true>                                              \\
+%     \EE{\<false>}          & \cqq \<false>                                             \\
+%     \EE{\<if>~e_1~e_2~e_3} & \cqq \EE{e_1}: \branch{
+%       \<true>  |> \EE{e_2}                                                               \\&
+%       \<false> |> \EE{e_3}
+%     }                                                                                  \\
+%     \EE{λx:t.e}            & \cqq λx:t.e                                               \\
+%     \EE{e_1~e_2}           & \cqq \lt~λx:t.e=\EE{e_1};~\lt~v_2=\EE{e_2};~\EE{e[v_2/x]}
+%   \end{align*}
+%   \caption{Semantics of \STLC}
+%   \label{fig:stlc}
+% \end{figure}
+
+% The syntax of \STLC{} is given in Fig. \ref{fig:stlc_syntax}.
+% And the semantics of \STLC{} is given in Fig. \ref{fig:stlc}.
+% But meta-language focus on the semantics rather than syntax.
+% We need to think of each item of syntax as a language construct.
+% In the evaluation rules, we can observe that:
+% (1) the evaluation of values gets themselves,
+%  which is consistent with the big-step operational semantics,
+% (2) and we use substitution in application.
+% In our meta-language, substitution is considered as a special meta-function.
+% The substitution rules of language constructs should be specified by developers, omitted here.
+
+% We can think of evaluation $\mathcal{E}$ as a function of $\Exp -> \Exp$.
+% Then the type $\mathcal{T}$ should be a function of $\Exp -> \Type$.
+% But a context is necessary when typing lambda abstraction.
+% Instead of changing $\mathcal{T}$ to $\Exp -> Ctx -> \Type$,
+% we introduce state monad to describe context modification for modularity.
+% So that $\mathcal{T}$ is a function of $\Exp -> State~CtxStack~\Type$.
+% \todo{How to explain this monad more clearly?}
+% \[
+%   \TT{λx:t.e} \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e};~\lt~\_=restoreCtx;~t->t'
+% \]
+
+% With the Introduction of monad, the type rule of $\<if>$ remains unchanged.
+% We can also keep the original semantic description intact
+% when subsequent DSL users extend the host language.
+% The type rules of \STLC is given in Fig. \ref{fig:stlc_type}.
+
+% \begin{figure}[t!]
+%   \begin{align*}
+%     \TT{\<true>}  & \cqq \<bool>  \\
+%     \TT{\<false>} & \cqq \<bool>  \\
+%     \TT{\<if>~e_1~e_2~e_3} & \cqq
+%       \lt~\<bool> = \TT{e_1};~
+%       \lt~t_2 = \TT{e_2};~
+%       \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)   \\
+%     \TT{x}        & \cqq searchCtx~x \\
+%     \TT{λx:t.e}   & \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e}; \\
+%                   & \hspace{13pt} \lt~\_=restoreCtx;~t->t' \\
+%     \TT{e_1~e_2}  & \cqq \Let{t_1->t}{\TT{e_1}} \TT{e_2}:(t_2\mid t_1=t_2|>t)
+%   \end{align*}
+%   \caption{Type Rules of \STLC}
+%   \label{fig:stlc_type}
+% \end{figure}
+
+\subsection{Extend the host language}
+
+Consider that we would like to support $\<halfa>$ and $\<fulla>$ in our \textsc{Bool} language.
+For example:
+\[ \<halfa>~\<true>~\<false> \equiv (\<false>, \<true>) \]
+However, they cannot be implemented by translation rules,
+ because half adder and full adder will get a pair of sum and carry as the results. 
+Pairs are in demand to build compound data structures.
+Naturally, projection $\<fst>$ and $\<snd>$ are involved as $\Exp$,
+ and product $t \times t$ is involved as $\Type$.
+Developers need to indicate the evaluation and typing rules for each newly defined language constructs, as shown in Fig. \ref{fig:bool-meta-ex}.
+
+\begin{figure}[t!]
+  \begin{align*}
+    \EE{(e_1,e_2)} & \cqq \lt~v_1=\EE{e_1};~\lt~v_2=\EE{e_2};~(v_1,v_2) &
+    \TT{(e_1,e_2)} & \cqq \lt~t_1=\TT{e_1};~\lt~t_2=\TT{e_2};~t_1\times t_2 \\
+    \EE{\<fst>~e} & \cqq \lt~(v_1,\_)=\EE{e};~v_1 &
+    \TT{\<fst>~e} & \cqq \lt~(t_1,\_)=\TT{e};~t_1 \\
+    \EE{\<snd>~e} & \cqq \lt~(\_,v_2)=\EE{e};~v_2 &
+    \TT{\<snd>~e} & \cqq \lt~(\_,t_2)=\TT{e};~t_2
+  \end{align*}
+  \caption{Meta-Extension Rules for \textsc{Bool}}
+  \label{fig:bool-meta-ex}
+\end{figure}
+
+Based on this host language with meta-extension,
+ $\<halfa>$ and $\<fulla>$ can be defined by translation rules.
+The syntax of \textsc{Bool} with adders and new translation rules are shown in Fig. \ref{fig:bool_adder}.
+
+\begin{figure}[t!]
+  \begin{align*}
+    e \in \Exp  & ::= \cdots \mid (e,e) \mid \<fst>~e \mid \<snd>~e \\
+                & \quad \mid \<halfa>~e~e \mid \<fulla>~e~e~e \\
+    t \in \Type & ::= \cdots \mid t\times t
+  \end{align*}
+  \begin{align*}
+    \<halfa>~e_1~e_2 & => (e_1~\<xor>~e_2,e_1~\<and>~e_2) \\
+    \<fulla>~e_1~e_2~e_3 & => (e_1~\<xor>~e_2~\<xor>~e_3, (e_1~\<xor>~e_2)~\<or>~(e_3~\<and>~(e_1~\<xor>~e_2)))
+  \end{align*}
+  \caption{Syntax of \textsc{Bool} with Adders and New Translation Rules}
+  \label{fig:bool_adder}
+\end{figure}
