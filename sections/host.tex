@@ -251,23 +251,27 @@ The operational semantics of meta-language are given in Fig. \ref{fig:seman-meta
 \subsection{Host Languages with Structural Semantics}\label{sec:m-host}
 
 Remember that our host language is designed to define DSL.
-In semantics lifting, the rules should be expanded recursively.
-%  because the original rules contain the evaluation of subexpressions.
+In overview, we have given an example of evaluation rule derivation.
+The abstraction is guaranteed because the evaluation rule of $\<if>$ is applied.
+We find that we can always expand the evaluation containing a certain language constructs with the corresponding evaluation rules.
+And when a language construct appears but is not used for evaluation, that language construct will be kept in the rule, which breaks abstraction.
 
-Therefore, the rules of the language constructs of the host language should be \textit{structural}:
- the evaluation of an expression $e=c(e_i,...)$ with sort $\Exp$ should be a computation of the value of each subexpression $e_i$ where $sort(e_i)=\Exp$.
-If some subexpression $e_i$ is used without evaluation, 
- or some expression being evaluated is not $e_i$,
- then the rule is not structural.In the case of \STLC, the evaluation rules of $\<if>$ and $\<and>$ are structural.
+A evaluation rule that guarantees that all subexpressions are used for evaluation is \textit{structural}.
+If some subexpression $e_i$ is used without evaluation directly, 
+%  or some expression being evaluated is not $e_i$,
+ then the rule is not structural.
+Most language constructs can be written in a structural way.
+In the case of \STLC, the evaluation rules of $\<if>$ and $\<and>$ are structural.
 And the evaluation rules of lambda abstraction and application are not structural.
-The former uses the $e_i$ not evaluated, while the latter evaluates an expression containing substitution.
-We rewrite these rules in the style of meta-language, where unstructural parts are highlighted:
+The former uses the subexpression not evaluated, while the latter evaluates an expression containing substitution (used as an argument of pure function).
+We rewrite these rules with unstructural parts highlighted:
+% We rewrite these rules in the style of meta-language, where unstructural parts are highlighted:
 % weak alert
 % \newcommand{\wkalt}[1]{\colorbox{lightgray}{#1}}
 \newcommand{\wkalt}[1]{\textcolor{magenta}{#1}}
 \begin{align*}
-  \EE{\<Abs>~x~t~e} & \cqq \<Abs>~x~t~\wkalt{e} \\
-  \EE{\<App>~e_1~e_2} & \cqq \Let{\<Abs>~x~t~e}{\EE{e_1}} \Let{v_2}{\EE{e_2}} \wkalt{\EE{subst~e~x~v_2}}.
+  \EE{λx:t.~e} & \cqq λx:t.~\wkalt{e} \\
+  \EE{e_1~e_2} & \cqq \Let{λx:t.e}{\EE{e_1}} \Let{v_2}{\EE{e_2}} \wkalt{\EE{e[v_2/x]}}.
 \end{align*}
 
 \begin{definition}
@@ -279,6 +283,6 @@ A rule $h(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if
 \end{itemize}
 \end{definition}
 
-Structural evaluation rules are the key to ensure the abstraction in semantic derivation.
-In other words, any language construct with unstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic derivation.
+Structural evaluation rules are the key to ensure the abstraction in semantic lifting.
+In other words, any language construct with unstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic lifting.
 The typing rules, fortunately, are all structural in \STLC.
