@@ -130,8 +130,12 @@ The translation rule itself is not allowed.
 
 \subsubsection{Substitution Rules}
 
-
-
+For each language construct defined by a translation rule,
+ the developer needs to define substitution rules for it.
+The set of substitution rules in DSL $R'_{subst}$ is a union of the substitution rules of the host language $R_{subst}$ and these newly defined substitution rules.
+Since substitution is a pure meta-function, the assumption \ref{asm:fun-ds} should be satisfied in DSL.
+Intuitively, substitution and full translation are commutable.
+Substitution rules derivation is our future work.
 
 \subsection{Semantics Lifting}
 
