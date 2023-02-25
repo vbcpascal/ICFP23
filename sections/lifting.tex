@@ -1,11 +1,13 @@
 \section{Translation Rules and Semantics Lifting}
 
 In this section, we describe the most important part of our method.
-We assume that the DSL is defined based on a sufficiently powerful host language.
-In the following, we formalize and impose some requirements on the translation rules.
-Then, we present the semantics lifting algorithm formally with examples. 
-As basic properties of semantic lifting, correctness and abstraction are proved in \todo{}.
-\todo{}
+We assume that there exists a sufficiently powerful host language (\STLC{} with extensions).
+And a DSL will be defined by translation rules based on this host language.
+We first give some concepts of translation rules and impose some requirements for it.
+Then, we present the semantics lifting algorithm formally with examples.
+We will illustrate two basic properties of the algorithm: correctness and abstraction.
+In the proofs, the importance of structured rules will be explained.
+Finally, we will introduce lambda abstraction and application to refine the algorithm and proofs.
 
 \subsection{Translation Rules}
 
@@ -70,39 +72,65 @@ The meta-functions we have used all satisfy this assumption.
 
 \subsubsection{Variable Scope in Translation Rules}
 
-We have very strict requirements for the variables in the translation rules.
-Variables defined in the rule cannot be leaked,
- and external variables may not be captured in the rule.
-These translation rules are not premitted:
-\begin{align*}
-  \mathit{leaked}~e & => \<let>~x:\<int> =1~\<in>~e \\
-  \mathit{captured}~e & => \<if>~x~\<true>~e 
-\end{align*}
-The former tries to bind a constant in $x$ for use in e, like $\mathit{leaked}~(x+1)$;
-and the latter attempts to get the value of $x$ in the current environment, like $\<let>~x=\<true>~\<in>~\mathit{captured}~\<false>$.
-From the user's point of view, it is weird to use variables that are not explicitly defined and use variables but not explicitly stated.
-And in the semantic derivation, the variables that are not substituted will be stuck.
-Taking all these considerations into account, we give the following requirements.
+Pombrio et al. \cite{infer-scope} provide a method to infer scope though syntactic sugar.
+They add restrictions to the syntactic sugar to keep the scope safe.
+We follow the conclusion:
 
 \begin{requirement}\label{req:close}
   A translation rule must be \textit{closed}: 
+    any variable used in the RHS must be bound locally (by lambda abstraction or let binding).
 \end{requirement}
 
-\subsubsection{Hygiene Problem}
+The requirement prohibits external variables capture.
+Also, locally bound variables must be explicitly parameterized for use in other parameters.
 
-Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
- variable bindings are possible to be hidden by macros, which we also have to face.
-For example, we define a translation rule $or'$ via $\<let>$:
-\[ e_1~or'~e_2 => \<let>~x=e_1~\<in>~\<if>~x~x~e_2 \]
-where $``x"$ is a literal identifier. 
-Then the expression $\<let>~x=\<false>~\<in>~(\<true>~or'~x)$ will be fully translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
-Fortunately, thanks to the requirement \ref{req:close}, the variables in the RHS must be locally bound. 
-Therefore, we can modify the names of variables safely.
-\textit{We treat literals variables bound in the RHS as mutable and always fresh.}
-We use $\texttt{@}$ to denote fresh variables, and $or'$ will be written as:
-\[ e_1~or'~e_2 => \<let>~\texttt{@x}=e_1~\<in>~\<if>~\texttt{@x}~\texttt{@x}~e_2. \]
+\begin{example}
+The definition of two translation rules and their sample programs are shown below:
+\[
+  \begin{array}{cl|cl}
+    % \text{Translation Rules} & & \text{Sample Programs} \\
+    \mathit{leaked}~e => \<let>~x:\<int> =1~\<in>~e
+    & \text{(\ding{51})}
+    & \mathit{leaked}~(x+1)
+    & \text{(\ding{55})} \\
+    \mathit{captured}~e => \<if>~x~\<true>~e
+    & \text{(\ding{55})}
+    & \<let>~x:\<bool> =\<true>~\<in>~\mathit{captured}~\<false>
+    & \text{(\ding{55})}
+  \end{array}
+\]
+
+The $\mathit{leaked}$ tries to bind a constant in $x$ for use in $e$.
+But $x$ referenced in $e$ is not allowed.
+Thus the translation rule is actually premitted,
+ but $x$ is not in scope of $e$.
+As a comparison, the following definition is compliant:
+\[ \mathit{leaked}'~x~e => \<let>~x:\<int> =1~\<in>~e \]
+The $\mathit{captured}$ attempts to get the value of $x$ in the current environment,
+ which may produce unbound identifiers after translation.
+The translation rule itself is not allowed.
+\end{example}
+
+% Taking all these considerations into account, we give the following requirements.
+
+% \subsubsection{Hygiene}
+
+% \todo{{the title}}
+% Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
+%   variable bindings are possible to be hidden by macros, and vice versa.
+% For example, we define a translation rule $or'$ via $\<let>$:
+% \[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
+%  where $``x"$ is a literal identifier. 
+% Then the expression $\<let>~x:\<bool>=\<false>~\<in>~(\<true>~or'~x)$ will be fully translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
+% Fortunately, thanks to the requirement \ref{req:close}, the variables in the RHS must be locally bound. 
+% Therefore, we can modify the names of variables safely.
+% \textit{We treat literals variables bound in the RHS as mutable and always fresh.}
+% We use $\texttt{@}$ to denote fresh variables, and $or'$ will be written as:
+% \[ e_1~or'~e_2 => \<let>~\texttt{@x}=e_1~\<in>~\<if>~\texttt{@x}~\texttt{@x}~e_2. \]
 
 \subsubsection{Substitution Rules}
+
+
 
 
 \subsection{Semantics Lifting}

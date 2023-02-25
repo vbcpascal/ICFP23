@@ -312,3 +312,22 @@ keywords = {automatic verification, macros, Language extensibility, metaprogramm
   journal={Proceedings of the 18th ACM SIGPLAN international conference on Functional programming},
   year={2013}
 }
+
+@article{infer-scope,
+author = {Pombrio, Justin and Krishnamurthi, Shriram and Wand, Mitchell},
+title = {Inferring Scope through Syntactic Sugar},
+year = {2017},
+issue_date = {September 2017},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {1},
+number = {ICFP},
+url = {https://doi.org/10.1145/3110288},
+doi = {10.1145/3110288},
+abstract = {Many languages use syntactic sugar to define parts of their surface language in terms of a smaller core. Thus some properties of the surface language, like its scoping rules, are not immediately evident. Nevertheless, IDEs, refactorers, and other tools that traffic in source code depend on these rules to present information to users and to soundly perform their operations. In this paper, we show how to lift scoping rules defined on a core language to rules on the surface, a process of scope inference. In the process we introduce a new representation of binding structure---scope as a preorder---and present a theoretical advance: proving that a desugaring system preserves α-equivalence even though scoping rules have been provided only for the core language. We have also implemented the system presented in this paper.},
+journal = {Proc. ACM Program. Lang.},
+month = {aug},
+articleno = {44},
+numpages = {28},
+keywords = {Scope, syntactic sugar, binding}
+}
