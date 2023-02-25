@@ -1,11 +1,13 @@
 \section{Meta-Language and Host Languages}\label{sec:host}
 
-In this section, the syntax and semantics of our meta-language are formalized.
-We will talk about the rules written by meta-language and their interpretation.
-As an instance, \STLC{} is defined with this meta-language as the host language.
-We will then briefly describe the importance of structural evaluation rules in host language,
- in preparation for the semantics derivation.
-Note that the concepts of meta-language and host languages (or any language defined by meta-language) need to be distinguished.
+In this section, we formalize the syntax and semantics of our meta-language (Section \ref{sec:meta}).
+The meta-language is used to define the semantics and typing rules of languages.
+We define \STLC{} with this meta-language as an instance.
+Then we want to emphasize the importance of structural evaluation rules of host language,
+ in preparation for the semantics derivation (Section \ref{sec:m-host}).
+Note the difference between concepts of meta-language and host languages (or any language defined by meta-language) in this section.
+We use $L$ to refer to a language defined by meta-language like \STLC.
+In the remainder of this section, we will indicate such language with an $L$ to distinguish from the meta-language.
 
 \subsection{Meta-Language}\label{sec:meta}
 
@@ -19,13 +21,15 @@ But our meta-language concentrate on evaluation and typing,
  whose design is intuitively close to Haskell.
 In particular, we replace branches and merging operation with pattern matching,
  and replace filters with meta-functions.
-In addition, monad is supported to cover side effects in the meta-language. % at the meta-language level.
-We start with expressions in meta-language.
+In addition, monad is supported to cover side effects in meta-language. % at the meta-language level.
+
+\todo{Overview of this subsection: language, rule, expression}
+\[   \EE{e_1~\<and>~e_2} \cqq \EE{e_1}: \branch{
+    \<true>  |> \EE{e_2} \\&
+    \<false> |> \<false> } \]
 
 \subsubsection{Expressions of Meta-Language}
 Various \textit{expressions} in the meta-language are used to encode the language constructs in the host language or the DSL, such as expressions and types.
-(We use $L$ to refer to a language defined by meta-language like \STLC.
-In the remainder of this section, we will indicate such language with an $L$ to distinguish from the meta-language.)
 
 An expression $\mexp$ is built by \textit{base expressions}, like literals and identifiers, ranged over by $\mexp_b$;
  \textit{expression variables}, ranged over by $\mexp_x$;
@@ -51,7 +55,7 @@ The signature of $\<Abs>$ is $sig(\<Abs>)=(\Id,\Type,\Exp)->\Exp$, and its sort 
 The signature of $\<Bool>$ is $()->\Type$, and its sort is $\Type$.
 \[
   \begin{array}{ccc}
-    \text{Language } L & & \text{Meta-Language} \\
+    % \text{Language } L & & \text{Meta-Language} \\
     λx\!:\<bool>.~e & \leftrightarrow & \<Abs>(``x",\<Bool>(),e) \text{ or } \<Abs>~``x"~\<Bool>~e
   \end{array}
 \]

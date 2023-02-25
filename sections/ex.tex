@@ -1,2 +1,128 @@
 \section{Host Language Extension}
 
+
+In this section, we will illustrate the three steps to define DSLs one by one.
+The distinction between monadic and pure meta-functions is reflected in the monad extension
+Also, stronger restrictions are imposed on the translation rules.
+
+\subsection{Meta-Extensions}
+
+Meta-extensions are direct extensions to the host language by
+ adding new constructors $C_n$ with corresponding rules, and new meta-functions $F_n$.
+This expansion has the following requirements: for each $c \in C_n$,
+ (1) $sort(c) \in S_p$, i.e. $\Exp$ or $\Type$;
+ (2) if $sort(c)=\Exp$, then the evaluation, typing and substitution rules should be specified.
+%  (3) if there exists $e_1\cdots e_n$ such that $c~e_1\cdots c_n$,  
+
+\begin{example}
+  Consider integers are expected to be supported via literals.
+  New constructors, $\<Lit>$, $\<Plus>$, $\<Lt>$ and $\<Eq>$ as $\Exp$, $\<Int>$ as $\Type$, will be added.
+  Fig. \ref{fig:int} shows the formal definition of integer extension, 
+  where $F_n=\{(+),(<)\}$, both of them are pure meta-functions.
+\end{example}
+
+% \todo{function Substitution will be modified after adding new constructors}
+
+\begin{figure}
+  \begin{align*}
+    & \<Int>:\Type \\ 
+    & \<Lit>:\Int->\Exp & 
+    & \EE{\<Lit>~i} \cqq \<Lit>~i \hspace{5em} \TT{\<Lit>~i} \cqq \<Int> \\
+    & & & (\<Lit>~i)[e/x] = \<Lit>~i \\
+    & \<Plus>:(\Exp,\Exp)->\Exp &
+    & \EE{\<Plus>~e_1~e_2} \cqq \Let{\<Lit>~i_1}{\EE{e_1}} \Let{\<Lit>~i_2}{\EE{e_2}} \<Lit>~(i_1+i_2) \\
+    & & & \TT{\<Plus>~e_1~e_2} \cqq \Let{\<Int>}{\TT{e_1}} \Let{\<Int>}{\TT{e_2}} \<Int> \\
+    & & & (\<Plus>~e_1~e_2)[e/x]=\<Plus>~e_1[e/x]~e_2[e/x] \\
+    & \<Lt>:(\Exp,\Exp)->\Exp &
+    & \EE{\<Lt>~e_1~e_2} \cqq \Let{\<Lit>~i_1}{\EE{e_1}} \EE{e_2}:\branch{
+        \<Lit>~i_2 \mid i_1 < i_2 |> \<True> \\&
+        \<Lit>~\_ |> \<False> 
+      } \\
+    & & & \TT{\<Lt>~e_1~e_2} \cqq \Let{\<Int>}{\TT{e_1}} \Let{\<Int>}{\TT{e_2}} \<Bool> \\
+    & & & (\<Lt>~e_1~e_2)[e/x]=\<Lt>~e_1[e/x]~e_2[e/x] \\
+    & \<Eq>:(\Exp,\Exp)->\Exp &
+    & \EE{\<Eq>~e_1~e_2} \cqq \Let{\<Lit>~i_1}{\EE{e_1}} \EE{e_2}:\branch{
+        \<Lit>~i_2 \mid i_1 = i_2 |> \<True> \\&
+        \<Lit>~\_ |> \<False> 
+      } \\
+    & & & \TT{\<Eq>~e_1~e_2} \cqq \Let{\<Int>}{\TT{e_1}} \Let{\<Int>}{\TT{e_2}} \<Bool> \\
+    & & & (\<Eq>~e_1~e_2)[e/x]=\<Eq>~e_1[e/x]~e_2[e/x] \\
+  \end{align*}
+  \caption{Formal Definition of Integer Extension}
+  \label{fig:int}
+\end{figure}
+
+\subsection{Monad Extensions}\label{sec:dsl-monad}
+
+As it was mentioned above, monad extension is the technique for side effects in computation without changing the original semantic definition.
+By monad $m$, various language features can be defined, such as environment, store, nondeterminism, I/O etc.
+And to put these together in a modular way, we use a mechanism called \textit{monad transformers}, ranged by $m_t$.
+In this section, we will put reference into \STLC, named \textsc{Ref}.
+Both the change of pure computation to those including side effects via monad (in evaluation), and the expansion of language features via monad transformer (in typing) will be explained.
+
+\subsubsection{Evaluation with Store}
+Monad extensions are often accompanied by meta-extensions.
+The basic language constructs for reference are allocation, dereferencing and assignment.
+For reading convenience, we use expression with syntax like $ref~e$, $!e$ and $e_1:=e_2$.
+To carry through the modification on store, 
+ the signature of $\mathcal{E}$ changes from $\Exp->\Exp$,
+ to $\Exp->(\mathit{State~Store})~\Exp$, abbreviated as $M_e~\Exp$,
+ where $\mathit{Store}$ maps locations to values.
+\[ \mathcal{E} : \Exp -> \Exp ~\wkalt{\monad \mathit{State~Store} \as M_e} \]
+An abstract index of store is a location (used as a base sort $Loc$).
+A reference will be evaluated to a location expression, constructed by $\<Loc>:Loc->\Exp$.
+New (monadic) meta-functions are also necessary for evaluation rules:
+\begin{itemize}
+  \item $\newLoc:M_e~Loc$ returns a newly allocated location;
+  \item $\store:(Loc,\Exp)->M_e~()$ updates the store to make the location contain the value;
+  \item $\fetch:Loc->M_e~\Exp$ gets the value at the location from the store.
+\end{itemize}
+Given these meta-functions, Fig. \ref{fig:ref_eval} shows the evaluation rules of these newly defined language constructs.
+
+\begin{figure}
+  \begin{align*}
+    \EE{\<Loc>~loc} & \cqq \<Loc>~loc \\
+    \EE{ref~e} & \cqq \Let{v}{\EE{e}} \Let{loc}{\newLoc} \Let{()}{\store~(loc,v)} \<Loc>~loc \\
+    \EE{!e} & \cqq \Let{\<Loc>~loc}{\EE{e}} \fetch~loc \\
+    \EE{e_1:=e_2} & \cqq \Let{\<Loc>~loc}{\EE{e}} \Let{v_2}{\EE{e_2}} \Let{()}{\store~(loc,v)} ()
+  \end{align*}
+  \caption{Evaluation Rules of \textsc{Ref}}
+  \label{fig:ref_eval}
+\end{figure}
+
+When introducing monad, pure meta-functions keep the original definition, 
+ while monadic meta-functions $f_m:(s_1\cdots s_n)->s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->m~s$ for type correctness, defined by:
+\[ \lifted{f_m}~args = \return~(f_m~args). \]
+
+\subsubsection{Typing with Store}
+If the content of a location has type $t$, then the type of the location is $Ref~t$,
+ introducing new constructor $\<Ref>$, whose sort is $sort(\<Ref>)=\Type->\Type$.
+Also unit type is essential.
+To extend the store typing which records the association between location and their types,
+ the signature of $\mathcal{T}$ changes from $\Exp->State~CtxStack~\Type$,
+ to $\Exp->\mathit{ReaderT}~Store_t~(State~CtxStack)~\Type$,
+ where $Store_t$ maps locations to types,
+ and $ReaderT~Store_t$ is a monad transformer.
+\[ \mathcal{T} : \Exp -> \Type ~\monad \mathit{State~CtxStack}, \wkalt{\mathit{Reader~Store}_t} \as M_t \]
+Monad transformers allow us touch high-level language features, but skill keep the access to low-level details.
+Now, for example, we can use both the meta-functions associated with store typing like $ask$ and the meta-functions provided by Context like $searchCtx$.
+Fig. \ref{fig:ref_type} gives the typing rules of language constructs in \textsc{Ref}.
+
+\begin{figure}
+  \begin{align*}
+    \TT{\<Loc>~loc} & \cqq \Let{t}{ask~loc} Ref~t \\
+    \TT{ref~e} & \cqq \Let{t}{\TT{e}} Ref~t \\
+    \TT{!e} & \cqq \Let{Ref~t}{\TT{e}} t \\
+    \TT{e_1:=e_2} & \cqq \Let{Ref~t}{\TT{e_1}} \TT{e_2}:(t_2 \mid t = t_2 |> Unit)
+  \end{align*}
+  \caption{Typing Rules of \textsc{Ref}}
+  \label{fig:ref_type}
+\end{figure} 
+
+Likewise, pure meta-functions remains unchanged,
+ and all the monadic meta-functions $f_m:(s_1\cdots s_n)->m~s$ need to lift to $\lifted{f_m}:(s_1\cdots s_n)->(m_t~m)~s$ by $\mathit{lift}$ operation\cite{todo},
+ so that the type rule of lambda abstraction in \textsc{Ref} will be written as:
+\begin{align*}
+  \TT{λx:t.e}   & \cqq \lt~\_=\lifted{updateCtx}~x~t;~\lt~t'=\TT{e}; \\
+                & \hspace{13pt} \lt~\_=\lifted{restoreCtx};~t->t'.
+\end{align*}

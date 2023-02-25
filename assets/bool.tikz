@@ -1,0 +1,28 @@
+\begin{tikzpicture}[x=6pt,y=6pt,yscale=1,xscale=1]
+
+\draw[dashed] (-5,5) -- (23,5);
+\node[align=left,fill=white] at (27,5) {Abstraction\\Barrier};
+
+\node[draw] (H) at (0,0) {\STLC};
+\node[draw] (D) at (0,10) {\textsc{Bool} };
+
+\node[align=center,text=magenta] (M1) at (18,-1) {%
+  $\EE{\mathit{if}~e_1~e_2~e_3} := \EE{e_1}: \left( \begin{aligned}
+    & \mathit{true} \triangleright \EE{e_2} \\
+    & \mathit{false} \triangleright \EE{e_3}
+  \end{aligned}\right) $};
+
+\node[align=center,text=magenta] (M2) at (18,11) {%
+  $\EE{e_1~\mathit{and}~e_2} := \EE{e_1}: \left( \begin{aligned}
+    & \mathit{true} \triangleright \EE{e_2} \\
+    & \mathit{false} \triangleright \mathit{false}
+  \end{aligned}\right) $};
+
+\draw[->] (D) -> node[right=2pt,align=center,fill=white,pos=0.4] {$e_1~\<and>~e_2=>$\\$\<if>~e_1~e_2~\<false>$} (H);
+\draw[->,thick,magenta] (18,1) -> node[left,fill=white,pos=0.6] {lifting} (18,9);
+\draw[thick,magenta] (4,4) 
+      to [out=-90,in=180] (6,2.5) 
+      to (16,2.5) 
+      to [out=0,in=-90] (18,4);
+
+\end{tikzpicture}
