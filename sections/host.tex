@@ -219,8 +219,6 @@ When a closed expression $\cexp$ is evaluated (or typed) in $L$,
 We write $L[\cexp]_{\mE}=Σ(b)$, if there exists a rule $\mE(c~\mexp_{x_1}\cdots \mexp_{x_n}) \cqq b$ in $R_{\mE}$ and an environment $Σ$,
  so that $\cexp=Σ(c~\mexp_{x_1}\cdots \mexp_{x_n})$.
 
-% L[e]
-
 \subsubsection{Semantics of Meta-Language}
 
 In this section, we present the semantics of our meta-language.
@@ -249,11 +247,13 @@ The operational semantics of meta-language are given in Fig. \ref{fig:seman-meta
   \label{fig:seman-meta}
 \end{figure}
 
-\subsection{Host Languages}\label{sec:m-host}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Host Languages with Structural Semantics}\label{sec:m-host}
 
 Remember that our host language is designed to define DSL.
-In semantics lifting, the rules should be expanded recursively,
- because the original rules contain the evaluation of subexpressions.
+In semantics lifting, the rules should be expanded recursively.
+%  because the original rules contain the evaluation of subexpressions.
+
 Therefore, the rules of the language constructs of the host language should be \textit{structural}:
  the evaluation of an expression $e=c(e_i,...)$ with sort $\Exp$ should be a computation of the value of each subexpression $e_i$ where $sort(e_i)=\Exp$.
 If some subexpression $e_i$ is used without evaluation, 

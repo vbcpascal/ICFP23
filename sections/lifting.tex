@@ -133,22 +133,21 @@ Formally, $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$, the definition of $\dd$ is shown in 
 \begin{figure}
   $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$
   \begin{align}
-    \noalign{\raggedright \hspace{2em} \bf Body:}
+    \noalign{\raggedright \hspace{2em} \bf Bone:}
     \dd(b:(br_1\cdots br_n)) & = \dd(b):(\dd(br_1)\cdots \dd(br_n)) \\
     \dd(\Let{pat}{b_1} b_2) & = \Let{pat}{\dd(b_1)} \dd(b_2) \\
-    \noalign{\raggedright \hspace{2em} \bf Bone:}
-    \dd(\EE{exp_x}) & = \EE{exp_x} \\  
-    \dd(\EE{exp_b}) & = \EE{exp_b} \\
-    \dd(\EE{c~exp_1\cdots exp_m}) 
-      & = \dd(Σ(d)) \hspace{20pt} \text{if there exists $Σ$ and $\EE{exp}\cqq d$,} \\
-      & \hspace{61pt} \text{such that $Σ(exp)=c~exp_1\cdots exp_m$} \nonumber \\
-    \dd(\EE{f_p~(exp_1'\cdots exp_n')}) & = f_p~(exp_1'\cdots exp_n') \\
-    \dd(f_m(exp_1'\cdots exp_n')) & = \EE{f_m(exp_1'\cdots exp_n')} \\
-    \noalign{\raggedright \hspace{2em} \bf General Expression:}
-    \dd(exp') & = exp' \\
+    \dd(\EE{\mexp_x}) & = \EE{\mexp_x} \\  
+    \dd(\EE{\mexp_b}) & = \EE{\mexp_b} \\
+    \dd(\EE{c~\mexp_1\cdots \mexp_m}) 
+      & = \dd(Σ(d)) \hspace{20pt} \text{if there exists $Σ$ and $\EE{\mexp}\cqq b$ in $L$,} \\
+      & \hspace{61pt} \text{such that $Σ(\mexp)=c~\mexp_1\cdots \mexp_m$} \nonumber \\
+    \dd(\EE{f_p~(\mexp_1'\cdots \mexp_n')}) & = \EE{f_p~(\mexp_1'\cdots \mexp_n')} \\
+    \dd(f_m(\mexp_1'\cdots \mexp_n')) & = f_m(\mexp_1'\cdots \mexp_n') \\
+    \noalign{\raggedright \hspace{2em} \bf Pure Expression:}
+    \dd(\mexp') & = \mexp' \\
     \noalign{\raggedright \hspace{2em} \bf Branch:}
     \dd(pat |> b) & = pat |> \dd(b) \\ 
-    \dd(pat \mid exp' |> b) & = pat \mid exp' |> \dd(b)
+    \dd(pat \mid \mexp' |> b) & = pat \mid \mexp' |> \dd(b)
   \end{align}
   \caption{Semantic Derivation}
   \label{fig:sd}
