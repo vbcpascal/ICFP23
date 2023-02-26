@@ -5,13 +5,19 @@ Our work on language lifting for DSL is related to the work on meta-language des
 \paragraph{Abstraction Maintenance.}
 For evaluation, the main related work is how to correspond the transformed program back to the source in optimization and debugging \cite{resugar,abs-1,abs-2,abs-3}.
 Resugaring maintains abstraction dynamically and provides the evaluation sequences to users.
-In order to illustrate the correctness of the evaluation sequences, resugaring proposes two properties: emulation and coverage \cite{resugar}.
+In order to illustrate the correctness of the evaluation sequences, resugaring proposes another two properties: emulation and coverage \cite{resugar}.
+Our work guarantee the abstraction by semantics lifting statically.
+When a program of DSL is evaluated, the host language evaluator is no use.
 We can only give the evaluation rules of the DSL now and 
- will consider giving the evaluation sequences holding these properties as future work.
+ consider providing the evaluation sequences as future work.
 % As far as we are aware, our framework is the first one to derive semantics for DSL and make it standalone.
 For typing, \cite{infer-types,type-sound,type-sound-1} have done pretty much work on statically deriving typing rules and guaranteeing the soundness of type system for syntactic sugar.
-The type derivation in our work is a natural application of the rule derivation
- and is not as competent as related work and is not our main contribution.
+Our approach to lifting semantics is similar to their approach to inferring typing rules,
+ both of which are static and treat the rules of host language as white box.
+For practicality, the method of inferring typing rules support a wider range of translation rules,
+ whose LHS can be a nested pattern.
+The typing rule derivation in our framework is a natural application of the rule derivation
+ and is not as competent as related work.
 
 \paragraph{Meta-language Design.}
 Our meta-language is designed built upon the skeletal semantics \cite{skeleton},

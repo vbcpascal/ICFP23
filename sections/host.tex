@@ -218,6 +218,8 @@ When a closed expression $\cexp$ is evaluated (or typed) in $L$,
  we need to find a rule in $L$ and apply it to $\cexp$.
 We write $L[\cexp]_{\mE}=Σ(b)$, if there exists a rule $\mE(c~\mexp_{x_1}\cdots \mexp_{x_n}) \cqq b$ in $R_{\mE}$ and an environment $Σ$,
  so that $\cexp=Σ(c~\mexp_{x_1}\cdots \mexp_{x_n})$.
+If a constructor $c\in C$ can be used to build a value in $L$,
+ $c$ is called a value constructor. 
 
 \subsubsection{Semantics of Meta-Language}
 
@@ -280,9 +282,20 @@ A rule $h(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if
   \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
    $\mexp_{x_i}$ is not used to be matched, as an argument in any meta-function, applied by any constructor, or as the result value in $b$;
   \item all the expressions that are computed recursively $h(\mexp)$ in $b$ must be $\mexp_{x_i}$.
+  \item all the constructor used in $b$ must be value constructor.
 \end{itemize}
 \end{definition}
 
 Structural evaluation rules are the key to ensure the abstraction in semantic lifting.
 In other words, any language construct with unstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic lifting.
 The typing rules, fortunately, are all structural in \STLC.
+
+\todo{}
+In addition, we add the following requirement to the rules:
+\begin{requirement}\label{req:pat}
+  The bone used for pattern matching is either a base expression, 
+   a recursive computation,
+   or an expression variable bound to recursive computation.
+\end{requirement}
+This rule is a weaker version of the structural rule,
+ which requires that parameters $\mexp_{x_i}$ cannot be used for pattern matching directly.

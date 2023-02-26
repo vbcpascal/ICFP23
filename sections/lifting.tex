@@ -239,6 +239,7 @@ Simplification is sometimes useful for abstraction property, for instance in thi
     =~ & \Let{λx':t'.e}{λx:t.e_2} \Let{v_1}{\dhl{\EE{e_1}}} \dhl{\EE{e[v_1/x']}} \\
     =~ & \Let{λx':t'.e}{λx:t.e_2} \Let{v_1}{\EE{e_1}} \EE{e[v_1/x']} \\
     =~ & \Let{x'}{x} \Let{t'}{t} \Let{e}{e_2} \Let{v_1}{\EE{e_1}} \EE{e[v_1/x']}
+    =~ & \Let{v_1}{\EE{e_1}} \EE{e_2[v_1/x]}
   \end{align*}
   \label{exm:let}
 \end{example}
@@ -259,12 +260,18 @@ We use subscripts to distinguish in which language the computation is performed.
 Then, the correctness is
 \[ \EELL{\ce} \rr{X} v \quad\miff\quad \EEL{\DS{\ce}} \rr{X} \DS{v}. \]
 
-For the proof of the correctness theorem, we will illustrate $\dd$ 
-To prove the above conclusion, we first illustrate that $\dd$ does not influence the result of a closed bone $\cb$.
+For the proof of the correctness theorem,
+ we first illustrate that $\dd$ and environment application is commutable,
+ and $dd$ does not influence the result of a closed bone $\cb$.
 
 \begin{lemma}\label{lemma:del-sig}
-  
+  Support $Σ$ is closed for bone $b$. Then:
+  \[ Σ(\dd(b)) \rr{X} v \quad\miff\quad \dd(Σ(b)) \rr{X} v. \]
 \end{lemma}
+
+\begin{proof}
+  Induct on $b$. \todo{check this!}
+\end{proof}
 
 \begin{lemma}\label{lemma:sig-bone}
   Support $\cb$ is a closed bone. Then:
@@ -294,12 +301,11 @@ To prove the above conclusion, we first illustrate that $\dd$ does not influence
     Then $b\rr{X} v$, iff the following judgements are satisfied:  
     \[ b_1\rr{X_1}v_1 \quad Σ=match(pat,v_1) \quad Σ(b_2)\rr{X_2}v_2 \quad X=X_1;X_2, \]
      where $Σ(b_2)$ is a closed bone.
-    By the induction hypothesis, we have
+    By the induction hypothesis and Lemma \ref{lemma:del-sig}, we have
     \begin{align*}
       b_1\rr{X_1}v_1    & \quad\miff\quad \dd(b_1)\rr{X_1} v_1, \\
-      Σ(b_2)\rr{X_2}v_2 & \quad\miff\quad \dd(Σ(b_2))\rr{X_2}v_2
-    \end{align*}
-    It can be proved that $\dd(Σ(b_2))=Σ(\dd(b_2))$ because $Σ$ is closed for $b_2$. 
+      Σ(b_2)\rr{X_2}v_2 & \quad\miff\quad Σ(\dd(b_2))\rr{X_2}v_2
+    \end{align*} 
     Therefore, we can apply rule \textsc{LetIn} to conclude
     \[ \Let{pat}{\dd(b_1)} \dd(b_2) \rr{X} v \]
     whose left-hand side equals to $\dd(b)$.
@@ -363,8 +369,11 @@ Before the proof of correctness, we will give a stronger lemma,
     Σ(b_2)\rr{X_2}v_2 & \quad\miff\quad \DB{Σ(b_2)} \rr{X_2} \DS{v_2}
   \end{align*}
 
-  We aim to show that $Σ'=match(pat, \DS{v_1})$ and \todo{}.
-  
+  We aim to show that $Σ'=match(pat, \DS{v_1})$ and $Σ'(\DB{b_2})=\DB{Σ(b_2)}$.
+  The first equation is based on requirement \ref{req:pat}.
+  % $v_1$ and $\DS{v_1}$ are either base expressions (trivial case) or results of recursive computation.
+  \todo{}  
+
   Case \textsc{Branch}: Similar.
 \end{proof}
 
@@ -382,7 +391,7 @@ Before the proof of correctness, we will give a stronger lemma,
 \subsubsection{Abstraction}
 
 Correctness is the foundation of the algorithm,
- while abstraction is the aim of our algorithm.
+ while abstraction is the goal of our algorithm.
 Before the proof of abstraction property,
  we first present \textit{strong abstraction theorem}.
 
@@ -393,31 +402,26 @@ Before the proof of abstraction property,
 
 \begin{theorem}[Strong Abstraction]
   If all the evaluation rules of the host language $L$ are structural,
-  the derived rules are also structural.
+  the derived rule maintain abstraction.
 \end{theorem}
 
 A structural evaluation rule required that the constructors used must be value constructors.
 
 \begin{proof}
-  
+  Consider the expressions evaluated during the process of $\dd$.
+  The only intereting case is that the expression is a compound expression constructed by $c$.
+  Since the evaluation rule of $c$ is structural, the expressions evaluated must be the arguments of $c$.
+  Due to the finite depth of RHS of the translation rule,
+   they eventually converge to the evaluation of parameters,
+   or to the evaluation of constant expressions.
+  Because all the rules in expansion are structural, no other constructors except value constructors are introduced.
 \end{proof}
 
 Strong abstraction property futher illustrates the importance of structural evaluation rules.
-And abstraction allows the language constructs to be used in the rules.
-Since the lambda abstraction in the translation rules has been defined as a new translation rules by lambda lifting, 
- the original translation rules are defined by this new language constructs, which is a DSL construct.
-Recursively, all generated translation rules satisfy such property.
-Therefore:
-
-\begin{theorem}
-  Lambda lifting maintains the abstraction.
-\end{theorem}
-
-
 
 \subsection{Preprocessing: Lambda Lifting}
 
-We have already exemplified how lambda abstractions break the abstraction property in semantic derivation.
+We have already exemplified how lambda abstractions break the abstraction property in semantic lifting.
 The solution to this problem is to expose the lambda abstractions in the translation rules 
  and define them as new language constructs of the DSL.
 For the outermost lambda abstractions, the transformation is straightforward. 
@@ -444,9 +448,38 @@ In addition, any variable $x_j$ which have been bound and captured by $e$ are al
 Note that the newly generated $c_n'$ needs to process lambda lifting recursively,
  and may generate some more translation rules.
 
-\todo{examples}
+The following lemma clearly holds.
 
 \begin{lemma}
   Lambda lifting preserves requirements \ref{req:no-recursion} and \ref{req:close}.
 \end{lemma}
 
+\begin{theorem}
+  Lambda lifting maintains the abstraction.
+\end{theorem}
+
+% \begin{proof}
+%   The generated translation rules defined without lambda abstraction satisfy the requirements of strong abstraction.
+  
+% \end{proof}
+
+\subsection{Substitution}
+
+In the evaluation rule of application and let binding, substitution is introduced.
+As mentioned earlier, we need to specify substitution rules for each language construct.
+Except for variable, the substituion rules are all structural.
+Some language constructs involving scopes need to check the variable name during substitution.
+For example, the substitution rule of lambda abstraction is defined as follows:
+\[ (λx:t.~e_1)[e_2/y] = \left\{ \begin{aligned}
+  & λx:t.~e_1 & x=y \\
+  & λx:t.~e_1[e_2/y] & \text{otherwise}
+\end{aligned} \right. \]
+This rule can be described in our meta-language:
+\[ (λx:t.~e_1)[e_2/y] \cqq ():\branch{
+    \_ \mid x=y |> λx:t.~e_1 \\&
+    \_ |> λx:t.~e_1[e_2/y]} \]
+
+We would like to define an operation $\omega$ to describe the substituion behaviour of an expression $\mexp$,
+ whose output is a bone.
+
+\todo{hygiene}
