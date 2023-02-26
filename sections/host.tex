@@ -1,34 +1,35 @@
-\section{Meta-Language and Host Languages}\label{sec:host}
+\section{Meta-Languages for Defining Semantics}\label{sec:host}
 
-In this section, we formalize the syntax and semantics of our meta-language (Section \ref{sec:meta}).
-The meta-language is used to define the semantics and typing rules of languages.
-We define \STLC{} with this meta-language as an instance.
-Then we want to emphasize the importance of structural evaluation rules of host language,
- in preparation for the semantics derivation (Section \ref{sec:m-host}).
-Note the difference between concepts of meta-language and host languages (or any language defined by meta-language) in this section.
-We use $L$ to refer to a language defined by meta-language like \STLC.
-In the remainder of this section, we will indicate such language with an $L$ to distinguish from the meta-language.
+In this section, we define a meta language for defining language semantics, and demonstrate its use in defining the semantics of \STLC{}, a simple typed lambda calculus.
+%Then we want to emphasize the importance of structural evaluation rules of host language,
+ %in preparation for the semantics derivation (Section \ref{sec:m-host}).
+%Note the difference between concepts of meta-language and host languages (or any language defined by meta-language) in this section.
+%We use $L$ to refer to a language defined by meta-language like \STLC.
+%In the remainder of this section, we will indicate such language with an $L$ to distinguish from the meta-language.
+Our meta-language is based on Skeleton \cite{skeleton}, a powerful tool 
+for a skeletal semantics of a language, where each skeleton describes the complete semantic behavior of a language construct. 
+In Skeleton, 
+a skeleton body is defined by a sequence of bones,
+which are recursive computations (called hooks), filters, or branches.
+Two new features of our language are ...
 
-\subsection{Meta-Language}\label{sec:meta}
+%Skeleton focuses on illustrating the consistency of concrete and abstract interpretations.
+%The meaning of filters varies in different goals.
+%But our meta-language concentrate on evaluation and typing,
+% whose design is intuitively close to Haskell.
+%In particular, we replace branches and merging operation with pattern matching,
+% and replace filters with meta-functions.
+%In addition, monad is supported to cover side effects in meta-language. % at the meta-language level.
 
-Our meta-language is inspired by Skeleton \cite{skeleton}, 
- used to describe concrete and abstract semantics in a structural way.
-A skeleton body is defined by a sequence of bones.
-A bone is either recursive computations (hooks), filters, or branches.
-Skeleton focuses on illustrating the consistency of concrete and abstract interpretations.
-The meaning of filters varies in different goals.
-But our meta-language concentrate on evaluation and typing,
- whose design is intuitively close to Haskell.
-In particular, we replace branches and merging operation with pattern matching,
- and replace filters with meta-functions.
-In addition, monad is supported to cover side effects in meta-language. % at the meta-language level.
+%\subsection{Meta-Language}\label{sec:meta}
+
 
 \todo{Overview of this subsection: language, rule, expression}
 \[   \EE{e_1~\<and>~e_2} \cqq \EE{e_1}: \branch{
     \<true>  |> \EE{e_2} \\&
     \<false> |> \<false> } \]
 
-\subsubsection{Expressions of Meta-Language}
+\subsection{Expressions}
 Various \textit{expressions} in the meta-language are used to encode the language constructs in the host language or the DSL, such as expressions and types.
 
 An expression $\mexp$ is built by \textit{base expressions}, like literals and identifiers, ranged over by $\mexp_b$;
