@@ -6,42 +6,56 @@
   \label{fig:bool-layer}
 \end{figure}
 
-\begin{figure}[t!]
-  \begin{align*}
-    e \in \Exp  & ::= \<true> \mid \<false> \mid \<if>~e_1~e_2~e_3 \\
-               & \quad \mid x \mid λx:t.e \mid e_1~e_2            \\
-    t \in \Type & ::= \<bool> \mid t_1 -> t_2
-  \end{align*}
-  \caption{Syntax of \STLC}
-  \label{fig:stlc_syntax}
-\end{figure}
+% \begin{figure}[t!]
+%   \begin{align*}
+%     e \in \Exp  & ::= \<true> \mid \<false> \mid \<if>~e_1~e_2~e_3 \\
+%                & \quad \mid x \mid λx:t.e \mid e_1~e_2            \\
+%     t \in \Type & ::= \<bool> \mid t_1 -> t_2
+%   \end{align*}
+%   \caption{Syntax of \STLC}
+%   \label{fig:stlc_syntax}
+% \end{figure}
 
-\begin{figure}[t!]
-  \begin{align*}
-    e \in \Exp  & ::= \cdots \mid \<not>~e \mid e~\<and>~e \mid e~\<or>~e \\
-                & \quad \mid e~\<nand>~e \mid e~\<nor>~e \mid e~\<xor>~e
-  \end{align*}
-  \caption{Syntax of \textsc{Bool}}
-  \label{fig:bool_syntax}
-\end{figure}
+% \begin{figure}[t!]
+%   \begin{align*}
+%     e \in \Exp  & ::= \cdots \mid \<not>~e \mid e~\<and>~e \mid e~\<or>~e \\
+%                 & \quad \mid e~\<nand>~e \mid e~\<nor>~e \mid e~\<xor>~e
+%   \end{align*}
+%   \caption{Syntax of \textsc{Bool}}
+%   \label{fig:bool_syntax}
+% \end{figure}
 
-In this section, we will outline our approach with an example.
-And the following topics will be covered:
-(1) how DSL developers define a DSL (\textsc{Bool}) by translation rules;
-(2) how DSL becomes standalone by semantic lifting in our framework;
-and (3) how developers extend the host language by meta-extension.
+We start with a pretty simple example.
+% to illustrate how we derive the semantics of the DSL defined by user through the translation rules.
+Consider that developers would like to implement a DSL \textsc{Bool} to describe boolean operations.
+Developers select \STLC{} as the host language.
+We will show 
+(1) how DSL developers define \textsc{Bool} by translation rules;
+(2) how our algorithm lift the semantics of \textsc{Bool}.
+Thereafter, if the developer wants to expand the language functionality
+ and the host language is not expressive enough,
+ the developer can extend the host language.
 
-Consider that we take \STLC{} (whose syntax is shown in Fig. \ref{fig:stlc_syntax}) as the host language, 
- and implement a DSL for boolean computations, named \textsc{Bool}.
-Programs in \textsc{Bool} are constructed by boolean values and operations, like:
-\begin{align*}
-  \<true>~\<and>~(\<false>~\<xor>~\<true>) & \equiv \<true> \\ 
-  (not~\<true>)~\<nor>~\<false> & \equiv \<true>.
-  % \<halfa>~\<true>~\<false> & \equiv (\<false>, \<true>).
-\end{align*}
-The syntax of \textsc{Bool} is shown in Fig. \ref{fig:bool_syntax},
- where the syntax of \STLC{} is preserved.
-And remember that syntax is just for readability.
+% So these operations can be defined using $\<if>$.
+% For example, $\<and>$ operator can be defined by following translation rule:
+% \[ e_1~\<and>~e_2 => \<if>~e_1~e_2~\<false> \]
+
+% In this section, we will outline our approach with an example.
+% And the following topics will be covered:
+% (1) ;
+% (2) how DSL becomes standalone by semantic lifting in our framework;
+% and (3) how developers extend the host language by meta-extension.
+
+% Consider that we take \STLC{} (whose syntax is shown in Fig. \ref{fig:stlc_syntax}) as the host language, 
+%  and implement a DSL for boolean computations, named \textsc{Bool}.
+% Programs in \textsc{Bool} are constructed by boolean values and operations, like:
+% \begin{align*}
+%   \<true>~\<and>~(\<false>~\<xor>~\<true>) & \equiv \<true> \\ 
+%   (not~\<true>)~\<nor>~\<false> & \equiv \<true>.
+%   % \<halfa>~\<true>~\<false> & \equiv (\<false>, \<true>).
+% \end{align*}
+% The syntax of \textsc{Bool} is shown in Fig. \ref{fig:bool_syntax},
+%  where the syntax of \STLC{} is preserved.
 %  and they are all treated as language constructs
 %  for which we need to define there evaluation and type rules.
 
@@ -76,7 +90,7 @@ This is permitted because we can think of these translation rules as being added
  i.e. $\<nand>$ is defined in a host language that contains $\<and>$ and $\<not>$.
 But the translation rules defined recursively are illegal.
 
-\subsection{Semantics Lifting}
+\subsection{Semantics Lifting for \textsc{Bool}}
 
 Semantics lifting, or evaluation rules derivation,
  takes the rules of host language written by meta-language and a translation rule as input,
@@ -106,7 +120,6 @@ Then, subsequent computations are processed (after the triangle).
 If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate;
  the same for $\<false>$.
 % All the evaluation rules can be expressed by recursive computations, meta-operations and branches.
-
 
 Now it is time for our framework. 
 Consider that for any $e_1$ and $e_2$,
@@ -286,7 +299,7 @@ Lambda lifting plays an import role in translation rules with nested lambda abst
 
 \subsection{Extend the host language}
 
-Consider that we would like to support $\<halfa>$ and $\<fulla>$ in our \textsc{Bool} language.
+Consider that developers would like to support $\<halfa>$ and $\<fulla>$ in the \textsc{Bool} language.
 For example:
 \[ \<halfa>~\<true>~\<false> \equiv (\<false>, \<true>) \]
 However, they cannot be implemented by translation rules,
@@ -311,14 +324,15 @@ Developers need to indicate the evaluation and typing rules for each newly defin
 
 Based on this host language with meta-extension,
  $\<halfa>$ and $\<fulla>$ can be defined by translation rules.
-The syntax of \textsc{Bool} with adders and new translation rules are shown in Fig. \ref{fig:bool_adder}.
+The new translation rules are shown in Fig. \ref{fig:bool_adder}.
+And the evaluation rules of these language constructs can be derived using the above algorithm.
 
 \begin{figure}[t!]
-  \begin{align*}
-    e \in \Exp  & ::= \cdots \mid (e,e) \mid \<fst>~e \mid \<snd>~e \\
-                & \quad \mid \<halfa>~e~e \mid \<fulla>~e~e~e \\
-    t \in \Type & ::= \cdots \mid t\times t
-  \end{align*}
+  % \begin{align*}
+  %   e \in \Exp  & ::= \cdots \mid (e,e) \mid \<fst>~e \mid \<snd>~e \\
+  %               & \quad \mid \<halfa>~e~e \mid \<fulla>~e~e~e \\
+  %   t \in \Type & ::= \cdots \mid t\times t
+  % \end{align*}
   \begin{align*}
     \<halfa>~e_1~e_2 & => (e_1~\<xor>~e_2,e_1~\<and>~e_2) \\
     \<fulla>~e_1~e_2~e_3 & => (e_1~\<xor>~e_2~\<xor>~e_3, (e_1~\<xor>~e_2)~\<or>~(e_3~\<and>~(e_1~\<xor>~e_2)))
