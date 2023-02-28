@@ -1,11 +1,11 @@
 \section{Introduction}
 
-Language-oriented programming (LOP) \cite{LOP} is solving a class of problems by designing one or more new domain-specific languages (DSLs).
-To avoid building common languages constructs like loops and branches,
+Language-oriented programming (LOP) \cite{LOP} features solving a class of problems by designing one or more new domain-specific languages (DSLs).
+To avoid reimplementing common language constructs like loops and branches,
 developers tend to implement DSLs based on another general-purpose programming language (called host language).
-Developers can define DSL based on the language features of the host language, rendering programs with domain-specific forms.
+Developers can define a DSL based on the language features of the host language, rendering programs with domain-specific forms.
 Languages with features like macros and higher-order functions are frequently employed\cite{macro-dsl,macro-dsl-2}.
-These features can be treated as a method to implement translation from the DSL to the host language.
+These features can be treated as methods to implement translations from DSLs to the host language.
 By specifying translation rules from the DSL to the host language, developers can obtain a DSL interpreter naturally.
 This type of DSL is called embedded DSL (eDSL).
 
@@ -17,7 +17,7 @@ This problem is called abstraction leakage \cite{Abstraction},
 % Much prior work has focused on how to translate information from the host language to the DSL users manually.
 % \todo{More related work about generate information manually}
 
-Pombrio et al. \cite{resugar} have made a great progress in maintenance of abstraction automatically, for syntactic sugars.
+Pombrio et al. \cite{resugar} have made great progress in maintenance of abstraction automatically, for syntactic sugars.
 They proposed \textit{resugaring}, by selectively reorganizing the sequence of evaluations on the host language to the DSL according to the reverse translation rules.
 But it still contains a host language evaluator executing,
  which means the semantics of these DSLs depends on the host language.
@@ -114,7 +114,7 @@ To address challenge (3),
  substitution keeps the correctness and abstraction of semantic derivation.
 
 In this paper, we propose a new framework for DSL design.
-We use simply-typed lambda-calculus (\STLC) as the host language for its elementariness and versatility.
+We use simply-typed lambda-calculus (\STLC) as the host language for its simplicity and versatility.
 To face the various demand of language features and enhance the versatility of the framework,
  we propose a general DSL implementation flow.
 Our framework provide meta-extensions (to introduce new vocabularies) and monad-extensions (to introduce side-effects) on the host language.
