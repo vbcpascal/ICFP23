@@ -27,14 +27,14 @@
 
 We start with a pretty simple example.
 % to illustrate how we derive the semantics of the DSL defined by user through the translation rules.
-Consider that developers would like to implement a DSL \textsc{Bool} to describe boolean operations.
-Developers select \STLC{} as the host language.
+Consider that developers would like to implement a DSL \textsc{Bool} to describe Boolean operations,
+ and select \STLC{} as the host language.
 We will show 
 (1) how DSL developers define \textsc{Bool} by translation rules;
-(2) how our algorithm lift the semantics of \textsc{Bool}.
-Thereafter, if the developer wants to expand the language functionality
- and the host language is not expressive enough,
- the developer can extend the host language.
+(2) how our algorithm lift the semantics for \textsc{Bool}.
+Thereafter, if the developers want to implement more constructs
+ but the host language is not expressive enough,
+ how the developer extend the host language.
 
 % So these operations can be defined using $\<if>$.
 % For example, $\<and>$ operator can be defined by following translation rule:
@@ -43,12 +43,12 @@ Thereafter, if the developer wants to expand the language functionality
 % In this section, we will outline our approach with an example.
 % And the following topics will be covered:
 % (1) ;
-% (2) how DSL becomes standalone by semantic lifting in our framework;
+% (2) how DSL becomes standalone by semantics lifting in our framework;
 % and (3) how developers extend the host language by meta-extension.
 
 % Consider that we take \STLC{} (whose syntax is shown in Fig. \ref{fig:stlc_syntax}) as the host language, 
-%  and implement a DSL for boolean computations, named \textsc{Bool}.
-% Programs in \textsc{Bool} are constructed by boolean values and operations, like:
+%  and implement a DSL for Boolean computations, named \textsc{Bool}.
+% Programs in \textsc{Bool} are constructed by Boolean values and operations, like:
 % \begin{align*}
 %   \<true>~\<and>~(\<false>~\<xor>~\<true>) & \equiv \<true> \\ 
 %   (not~\<true>)~\<nor>~\<false> & \equiv \<true>.
@@ -61,13 +61,13 @@ Thereafter, if the developer wants to expand the language functionality
 
 \subsection{Define \textsc{Bool} with Translation Rules}\label{sec:ov-1}
 
-Boolean operations like $\<and>$ can be directly define by host language constructs like $\<if>$.
+Boolean operations like $\<and>$ can be directly defined by host language constructs like $\<if>$.
 Each translation rule defines a new language construct in DSL.
 And we require that each such language construct is determined by a unique translation rule.
-A translation rule, ranged over by $tr$, consists of a LHS and a RHS splitted by $=>$,
+A translation rule, ranged over by $tr$, consists of a left-hand side (LHS) and a right-hand side (RHS) splitted by $=>$,
  where LHS is an expression containing the new language construct and pattern variables;
  and RHS is composed of host language constructs and pattern variables.
-Each pattern variable must be of a specific sort, such as $\Exp$, $\Type$.
+Each pattern variable must be of a specific \textit{sort}, such as $\Exp$, $\Type$.
 We use $e_i$ for $\Exp$, $t_i$ for $\Type$, $x$ for identifiers.
 Then, $\<and>$ can be defined as follows:
 \[ e_1~\<and>~e_2 => \<if>~e_1~e_2~\<false> \]
@@ -84,8 +84,8 @@ Then, $\<and>$ can be defined as follows:
   \label{fig:bool_tr1}
 \end{figure}
 
-Translation rules of the rest constructs in \textsc{Bool} are shown in Fig. \ref{fig:bool_tr1}.
-In the example of $\<nand>$, DSL construct $\<not>$ and $\<and>$ is used in the translation rule.
+Translation rules of the rest language constructs in \textsc{Bool} are shown in Fig. \ref{fig:bool_tr1}.
+In the definition of $\<nand>$, DSL constructs $\<not>$ and $\<and>$ are used in the translation rule.
 This is permitted because we can think of these translation rules as being added to the host language one by one,
  i.e. $\<nand>$ is defined in a host language that contains $\<and>$ and $\<not>$.
 But the translation rules defined recursively are illegal.
@@ -96,16 +96,15 @@ Semantics lifting, or evaluation rules derivation,
  takes the rules of host language written by meta-language and a translation rule as input,
  and outputs the evaluation rules of the new language construct written by meta-language.
 Therefore, before discussing the semantics lifting algorithm,
- we first briefly introduce the meta-language by example.
+ we first briefly introduce the meta-language by an example.
 Consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_2$ and $e_3$,
- whose big-step operational semantics are defined using two seperate rules.
+ whose big-step operational semantics is defined using two seperate rules.
 \[
   \inference{e_1 \Da \<true> & e_2 \Da v_2}
   {\<if>~e_1~e_2~e_3 \Da v_2} \quad
   \inference{e_1 \Da \<false> & e_3 \Da v_3}
   {\<if>~e_1~e_2~e_3 \Da v_3}
 \]
-
 In our meta-language, the evaluation of $\<if>$ expression is given by the following single rule:
 \[
   \ctr{If}{\<if>~e_1~e_2~e_3} \cqq
@@ -117,8 +116,8 @@ In our meta-language, the evaluation of $\<if>$ expression is given by the follo
 Here, $\HH{e_1}$ identifies the evaluation of subexpression $e_1$,
  whose result is used to select a specific branch by pattern matching (after the colon).
 Then, subsequent computations are processed (after the triangle).
-If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate;
- the same for $\<false>$.
+If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluated;
+ and if the value of $e_1$ is $\<false>$, then $e_3$ will be evaluated.
 % All the evaluation rules can be expressed by recursive computations, meta-operations and branches.
 
 Now it is time for our framework. 
@@ -139,190 +138,65 @@ Hence, according to the translation rule and evaluation rules of the host langua
 \end{align*}
 The evaluation rule of $\<and>$ has been derived.
 The following points are worth noting:
-(1) Abstraction: the semantics of $\<and>$ is made explicit, and no longer needs to be expressed by $\<if>$ from the host language.
+(1) \textit{Abstraction}: the semantics of $\<and>$ is defined straightforward, and no longer needs to be expressed by $\<if>$ from the host language.
 That is, even if we remove $\<if>$ from the language, the $\<and>$ works fine. (Fig. \ref{fig:bool-layer})
-(2) Uniqueness: due to our requirement of uniqueness of the rules, 
+(2) \textit{Uniqueness}: due to our requirement of uniqueness of the rules, 
  the rule unfolding in the derivation is always deterministic.
 Also thanks to uniqueness of translation rules,
  the rules we derive for these new language constructs stay unique.
 
-The typing rule can also be derived in a similar way, and we will not discuss this in detail.
+% The typing rule can also be derived in a similar way, and we will not discuss this in detail.
 %  and we will not elaborate on them here.
 
-\paragraph{Lambda Lifting.}
-As mentioned above, a language construct can be defined as a lambda abstraction by translation rules, like $\<andf>$.
-The above method will result in a rule which which breaks abstraction:
+\paragraph{Lambda Exposure.}
+As mentioned above, a language construct can be defined as a lambda abstraction by translation rules.
+For example, we can define $\<andf>$ by the following translation rule:
+\[ \<andf> => λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false> \]
+The above method will result in a rule which breaks abstraction:
 \begin{align*}
-  \EE{\<andf>} 
+  \textsc{AndF}{\<andf>} 
     & \cqq \EE{λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>} \\
     & = λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>, 
 \end{align*}
 But by converting $\<andf>$ to $\<and>$, the internal computation can be exposed.
 The approach of exposing parameters of the lambda abstraction in RHS,
- and transforming the rule into a set of new translation rules, is called lambda lifting.
+ and transforming the rule into a set of new translation rules, is called lambda exposure.
 In the above example, $\<andf>$ will be transformed into the following two rules:
 \begin{align*}
   \mathit{and_f'}~e_1~e_2 & => \<if>~e_1~e_2~\<false> \\ 
   \<andf> & => λx:\<bool>.~λy:\<bool>.~\mathit{and_f'}~x~y.
 \end{align*}
-By thinking of $\mathit{andf'}$ as a language construct on the DSL,
+By thinking of $\mathit{andf'}$ as a DSL construct,
  the abstraction property of $\<andf>$ is satisfied.
-Lambda lifting plays an import role in translation rules with nested lambda abstractions.
-
-% \paragraph{Derive the type rules.}
-% The method of deriving evaluation rules can also be applied to type rules.
-% For example, the type rule of $\<and>$ can be derived by
-% \begin{align*}
-%   \TT{e_1~\<and>~e_2}
-%     & \cqq \TT{\<if>~e_1~e_2~\<false>} 
-%         & \text{(Translation rule)} \\
-%     & = \Let{\<bool>}{\TT{e_1}}
-%         \Let{t_2}{\TT{e_2}}
-%         \TT{\<false>}:(t_3 \mid t_2 = t_3 |> t_2)
-%         & \text{(Evaluation rule of $\<if>$)} \\
-%     & = \Let{\<bool>}{\TT{e_1}}
-%         \Let{t_2}{\TT{e_2}}
-%         \<bool>:(t_3 \mid t_2 = t_3 |> t_2)
-%         & \text{(Evaluation rule of $\<false>$)} \\
-%     & = \Let{\<bool>}{\TT{e_1}}
-%         \Let{\<bool>}{\TT{e_2}}
-%         \<bool>.
-%         & \text{(Simplification)}
-% \end{align*}
-
-
-
-% \subsection{Define Host Language via Meta-Language}
-
-% Skeletal semantics \cite{skeleton} can be used to describe concrete and abstract semantics in a structural way.
-% A skeleton body is defined by a sequence of bones.
-% A bone is either recursive computations (hooks),
-%  meta-operations (filters), or different pathways (branches).
-% Our meta-language is based on Skeleton, but for different goals.
-% We replace branch and merging with pattern matching,
-%  and replace filters with meta-functions.
-% For example, consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_2$ and $e_3$,
-%  whose big-step operational semantics are defined using two seperate rules.
-% \[
-%   \inference{e_1 \Da \<true> & e_2 \Da v_2}
-%   {\<if>~e_1~e_2~e_3 \Da v_2} \quad
-%   \inference{e_1 \Da \<false> & e_3 \Da v_3}
-%   {\<if>~e_1~e_2~e_3 \Da v_3}
-% \]
-% In our meta-language, the evaluation rule of $\<if>$ is given by
-% \[
-%   \EE{\<if>~e_1~e_2~e_3} \cqq
-%   \EE{e_1}: \branch{
-%     \<true>  |> \EE{e_2} \\&
-%     \<false> |> \EE{e_3}
-%   }.
-% \]
-% Here, $\EE{e_1}$ identifies the evaluation of subexpression $e_1$,
-%  whose result is used to select a specific branch by pattern matching (after the colon).
-% Then, subsequent computations are processed (after the triangle).
-% If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate; the same for $\<false>$.
-% The typing rule of $\<if>$ can be defined in a similar way:
-% \[
-%   \TT{\<if>~e_1~e_2~e_3} \cqq
-%     \lt~\<bool> = \TT{e_1};~
-%     \lt~t_2 = \TT{e_2};~
-%   \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)
-% \]
-% In order to make the structure clear,
-% we use $let$ as a syntactic sugar to represent a pattern matching with unique branch.
-% The type of $e_1$ is required to be $\<bool>$.
-% The matching of $e_3$ has a side condition (named \textit{guard} in Haskell),
-% which requires $t_2$ to equal $t_3$.
-% Note that the evaluation and typing rules of $\<if>$ are unique,
-%  which guarantees the determinacy in derivation.
- 
-
-
-% \begin{figure}[t!]
-%   \begin{align*}
-%     \EE{\<true>}           & \cqq \<true>                                              \\
-%     \EE{\<false>}          & \cqq \<false>                                             \\
-%     \EE{\<if>~e_1~e_2~e_3} & \cqq \EE{e_1}: \branch{
-%       \<true>  |> \EE{e_2}                                                               \\&
-%       \<false> |> \EE{e_3}
-%     }                                                                                  \\
-%     \EE{λx:t.e}            & \cqq λx:t.e                                               \\
-%     \EE{e_1~e_2}           & \cqq \lt~λx:t.e=\EE{e_1};~\lt~v_2=\EE{e_2};~\EE{e[v_2/x]}
-%   \end{align*}
-%   \caption{Semantics of \STLC}
-%   \label{fig:stlc}
-% \end{figure}
-
-% The syntax of \STLC{} is given in Fig. \ref{fig:stlc_syntax}.
-% And the semantics of \STLC{} is given in Fig. \ref{fig:stlc}.
-% But meta-language focus on the semantics rather than syntax.
-% We need to think of each item of syntax as a language construct.
-% In the evaluation rules, we can observe that:
-% (1) the evaluation of values gets themselves,
-%  which is consistent with the big-step operational semantics,
-% (2) and we use substitution in application.
-% In our meta-language, substitution is considered as a special meta-function.
-% The substitution rules of language constructs should be specified by developers, omitted here.
-
-% We can think of evaluation $\mathcal{E}$ as a function of $\Exp -> \Exp$.
-% Then the type $\mathcal{T}$ should be a function of $\Exp -> \Type$.
-% But a context is necessary when typing lambda abstraction.
-% Instead of changing $\mathcal{T}$ to $\Exp -> Ctx -> \Type$,
-% we introduce state monad to describe context modification for modularity.
-% So that $\mathcal{T}$ is a function of $\Exp -> State~CtxStack~\Type$.
-% \todo{How to explain this monad more clearly?}
-% \[
-%   \TT{λx:t.e} \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e};~\lt~\_=restoreCtx;~t->t'
-% \]
-
-% With the Introduction of monad, the type rule of $\<if>$ remains unchanged.
-% We can also keep the original semantic description intact
-% when subsequent DSL users extend the host language.
-% The type rules of \STLC is given in Fig. \ref{fig:stlc_type}.
-
-% \begin{figure}[t!]
-%   \begin{align*}
-%     \TT{\<true>}  & \cqq \<bool>  \\
-%     \TT{\<false>} & \cqq \<bool>  \\
-%     \TT{\<if>~e_1~e_2~e_3} & \cqq
-%       \lt~\<bool> = \TT{e_1};~
-%       \lt~t_2 = \TT{e_2};~
-%       \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)   \\
-%     \TT{x}        & \cqq searchCtx~x \\
-%     \TT{λx:t.e}   & \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e}; \\
-%                   & \hspace{13pt} \lt~\_=restoreCtx;~t->t' \\
-%     \TT{e_1~e_2}  & \cqq \Let{t_1->t}{\TT{e_1}} \TT{e_2}:(t_2\mid t_1=t_2|>t)
-%   \end{align*}
-%   \caption{Type Rules of \STLC}
-%   \label{fig:stlc_type}
-% \end{figure}
+The derived evaluation rule of $\<andf>$ is defined as follows:
+\[ \ctr{AndF}{\<andf>} \cqq λx:\<bool>.~λy:\<bool>.~\mathit{and_f'}~x~y \]
+Lambda exposure plays an important role in translation rules with nested lambda abstractions.
 
 \subsection{Extend the host language}
 
-Consider that developers would like to support $\<halfa>$ and $\<fulla>$ in the \textsc{Bool} language.
+Consider that developers would like to support $\<halfa>$ and $\<fulla>$ to simulate digital circuit based on the \textsc{Bool} language, named \textsc{Adder}.
 For example:
 \[ \<halfa>~\<true>~\<false> \equiv (\<false>, \<true>) \]
 However, they cannot be implemented by translation rules,
- because half adder and full adder will get a pair of sum and carry as the results. 
+ because half adder and full adder will get the pair of sum and carry as the results. 
 Pairs are in demand to build compound data structures.
+With meta-language extensions, we can make the host language support pairs.
 Naturally, projection $\<fst>$ and $\<snd>$ are involved as $\Exp$,
  and product $t \times t$ is involved as $\Type$.
-Developers need to indicate the evaluation and typing rules for each newly defined language constructs, as shown in Fig. \ref{fig:bool-meta-ex}.
+Developers need to indicate the evaluation and typing rules for each newly defined language constructs.
+The evaluation rules are as shown in Fig. \ref{fig:bool-meta-ex}.
 
 \begin{figure}[t!]
   \begin{align*}
-    \EE{(e_1,e_2)} & \cqq \lt~v_1=\EE{e_1};~\lt~v_2=\EE{e_2};~(v_1,v_2) &
-    \TT{(e_1,e_2)} & \cqq \lt~t_1=\TT{e_1};~\lt~t_2=\TT{e_2};~t_1\times t_2 \\
-    \EE{\<fst>~e} & \cqq \lt~(v_1,\_)=\EE{e};~v_1 &
-    \TT{\<fst>~e} & \cqq \lt~(t_1,\_)=\TT{e};~t_1 \\
-    \EE{\<snd>~e} & \cqq \lt~(\_,v_2)=\EE{e};~v_2 &
-    \TT{\<snd>~e} & \cqq \lt~(\_,t_2)=\TT{e};~t_2
+    \ctr{Pair}{(e_1,e_2)} & \cqq \lt~v_1=\EE{e_1};~\lt~v_2=\EE{e_2};~(v_1,v_2) \\
+    \ctr{Fst}{\<fst>~e} & \cqq \lt~(v_1,\_)=\EE{e};~v_1 \\
+    \ctr{Snd}{\<snd>~e} & \cqq \lt~(\_,v_2)=\EE{e};~v_2 
   \end{align*}
   \caption{Meta-Extension Rules for \textsc{Bool}}
   \label{fig:bool-meta-ex}
 \end{figure}
 
-Based on this host language with meta-extension,
+Based on this host language with meta-extensions,
  $\<halfa>$ and $\<fulla>$ can be defined by translation rules.
 The new translation rules are shown in Fig. \ref{fig:bool_adder}.
 And the evaluation rules of these language constructs can be derived using the above algorithm.

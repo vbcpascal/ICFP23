@@ -4,9 +4,9 @@ Language lifting is the method for generating a stondalone DSL from an extended 
 Ignoring the modification of the syntax, we will present how to derive computation rules and type rules.
 In particular, we will discuss language lifting for those whose host language is \STLC{} or extended \STLC.
 
-\subsection{Preprocessing: Lambda Lifting}
+\subsection{Preprocessing: Lambda Exposure}
 
-We have already exemplified how lambda abstractions break the abstraction property in semantic derivation.
+We have already exemplified how lambda abstractions break the abstraction property in semantics derivation.
 The solution to this problem is to expose the lambda abstractions in the translation rules 
  and define them as new language constructs of the DSL.
 For the outermost lambda abstractions, the transformation is straightforward. 
@@ -23,20 +23,20 @@ Formally, for the translation rule $tr$ which defines $c_n'$:
   \laml{exp_x} & = exp_x \\
   \laml{exp_b} & = exp_b
 \end{align}
-where $\laml{\bullet}$ is lambda lifting transformation, with the generation of some translation rules.
+where $\laml{\bullet}$ is lambda exposure transformation, with the generation of some translation rules.
 The first rule states that if a lambda abstraction is applied directly in the translation rule, 
  then it does not need to be lifted because it does not break the abstraction (which can essentially be written as a $\<let>$).
 The second is the main rule, which generates a new constructor $c_n'$ to describe the semantics of a lambda abstraction.
 Any expression variables of $LHS(tr)$ used in $e$ (i.e., parameters of $c_n$) need to be applied by $c_n'$.
 In addition, any variable $x_j$ which have been bound and captured by $e$ are also required to be included,
  by an new expression variable $e_j$, which ensures the closure of translation rules.
-Note that the newly generated $c_n'$ needs to process lambda lifting recursively,
+Note that the newly generated $c_n'$ needs to process lambda exposure recursively,
  and may generate some more translation rules.
 
 \todo{examples}
 
 \begin{lemma}
-  Lambda lifting preserves requirements \ref{req:no-recursion} and \ref{req:close}.
+  Lambda exposure preserves requirements \ref{req:no-recursion} and \ref{req:close}.
 \end{lemma}
 
 \subsection{Semantic Derivation}
@@ -48,14 +48,14 @@ In this section, a generic algorithm will be presented,
 For a DSL defined by multiple translation rules, 
  we derive the evaluation and typing rules and add them to the language individually.
 
-% And now we will give the algorithm of semantic derivation. 
+% And now we will give the algorithm of semantics derivation. 
 Suppose a host language based on \STLC is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
 where $S_p=\{\Exp,\Type\}$,
 and a translation rule $tr$ has shape $c_n~exp_1\cdots exp_n => e$,
 where $sort(c_n)=\Exp$ and $tr$ satisfies the requirements.
 Let $L'=\langle S_p, C', R'_{\mE}, R'_{\mT}, R'_{subst}, F\rangle$ be the new language that supports $c_n$ (i.e., $C'=C \cup \{c_n\}$).
 
-In overview, the core idea of the semantic derivation has been shown: 
+In overview, the core idea of the semantics derivation has been shown: 
  expand expressions evaluation recursively according to the rules in $L$ 
  until all the evaluation are unexpandable.
 Formally, $\EE{LHS(tr)}=\dd(\EE{RSH(tr)})$, the definition of $\dd$ is shown in Fig. \ref{fig:sd}.
@@ -110,7 +110,7 @@ For clarity, the parts that need to be applied by $\dd$ are underlined.
 
 The language construct $\<let>$ is a common syntactic sugar, defined by lambda abstraction and application.
 Considering $\<let>$ as a translation rule, example \ref{exm:let} presents the derivation of its evaluation rule.
-Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda lifting.
+Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda exposure.
 The last step is simplification, since that both left and right sides are constructed by $\<Abs>$ (i.e., $λ$ in language).
 simplification is sometimes useful for abstraction property, for instance in this example,
  where the evaluation rule of $\<let>$ no longer depends on lambda abstraction (even if this is allowed).
@@ -133,7 +133,7 @@ In \todo{}, we will discuss substituion more deeply.
 
 \subsubsection{Properties}
 
-With the semantic derivation algorithm, the evaluation rules of $L'$ are generated.
+With the semantics derivation algorithm, the evaluation rules of $L'$ are generated.
 We expect these rules to have the following properties:
 \begin{itemize}
   \item Correctness: a closed expression $\ce$ in $L'$, should have the same value as 
@@ -261,13 +261,13 @@ A structural evaluation rule required that the constructors used must be value c
 
 Strong abstraction property futher illustrates the importance of structural evaluation rules.
 And abstraction allows the language constructs to be used in the rules.
-Since the lambda abstraction in the translation rules has been defined as a new translation rules by lambda lifting, 
+Since the lambda abstraction in the translation rules has been defined as a new translation rules by lambda exposure, 
  the original translation rules are defined by this new language constructs, which is a DSL construct.
 Recursively, all generated translation rules satisfy such property.
 Therefore:
 
 \begin{theorem}
-  Lambda lifting maintains the abstraction.
+  Lambda exposure maintains the abstraction.
 \end{theorem}
 
 

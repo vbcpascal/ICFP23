@@ -1,35 +1,45 @@
 \section{Related Work}
 
-Our work on language lifting for DSL is related to the work on meta-language design, DSL implementation and abstraction maintenance.
+Our work on language lifting for DSL is related to the work on abstraction maintenance, meta-language design, and DSL implementation.
 
 \paragraph{Abstraction Maintenance.}
-For evaluation, the main related work is how to correspond the transformed program back to the source in optimization and debugging \cite{resugar,abs-1,abs-2,abs-3}.
-Resugaring maintains abstraction dynamically and provides the evaluation sequences to users.
-In order to illustrate the correctness of the evaluation sequences, resugaring proposes another two properties: emulation and coverage \cite{resugar}.
-Our work guarantee the abstraction by semantics lifting statically.
-When a program of DSL is evaluated, the host language evaluator is no use.
-We can only give the evaluation rules of the DSL now and 
- consider providing the evaluation sequences as future work.
-% As far as we are aware, our framework is the first one to derive semantics for DSL and make it standalone.
-For typing, \cite{infer-types,type-sound,type-sound-1} have done pretty much work on statically deriving typing rules and guaranteeing the soundness of type system for syntactic sugar.
-Our approach to lifting semantics is similar to their approach to inferring typing rules,
- both of which are static and treat the rules of host language as white box.
-For practicality, the method of inferring typing rules support a wider range of translation rules,
- whose LHS can be a nested pattern.
-The typing rule derivation in our framework is a natural application of the rule derivation
- and is not as competent as related work.
+We are primarily related to Resugar's work \cite{resugar}.
+Resugaring is the lifting of evaluation sequence of expressions contains syntactic sugar.
+The syntactic sugar here is similar to our translation rules.
+A language containing syntactic sugar, called surface language;
+ and the original language, called core language.
+They are respectively correspond to our DSL and the host language.
+An expression in a surface language is translated into the core language and evaluated in the core language first.
+Then, for each expression in the host evaluation sequence,
+ check whether it can be resugared to surface language using the reverse rules.
+The expressions resugared are shown to users as the evaluation sequence of the surface language.
+Their algorithm holds stronger properties than ours: \textit{emulation} and \textit{coverage}.
+Emulation is an enhancement of correctness,
+ which requires each expression in surface language evaluation sequence can be desugared into an expression in the host language evaluation sequence.
+Coverage is a requirement that the evaluation process be as explicitly complete as possible to the user.
+Since our current work has not yet touched on small step evaluation, it is not possible to discuss the properties associated with the evaluation sequence.
+We consider providing the evaluation sequences as future work.
+On the other hand, we are maintaining abstraction by making the language standalone and is done statically before program execution.
+The Resugaring approach can be seen as a filtering of useful information dynamically, which is less efficient when it contains complex syntactic sugars, or when a program contains a large number of syntactic sugars.
+In terms of error message reporting, we can specify which language construct caused the evaluation error, whereas resugaring can only provide error messages for the host language.
+Other related work for evaluation, the main related work is how to correspond the transformed program back to the source in optimization and debugging \cite{abs-1,abs-2,abs-3}.
+
+Other work about resugaring is also very relevant to us \cite{infer-scope,lazy-desg}.
+Another main related work is typing rules inference \cite{infer-types}.
+Similar to our approach, the typing rules of the host language are treated as white boxes, and the typing rules of the DSL are statically derived.
+After these rules have been derived, the host language can actually be removed.
+Our approach to deriving rules can be naturally generalized to types and has been implemented.
+For practicality, the method of inferring typing rules support a wider range of syntactic sugars.
+For example, pattern-based syntactic sugar, such as list-comprehension is allowed,
+ while we only allow for unique translation rules to be defined for each DSL construct.
+Also, this work introduces mechanisms such as \texttt{calc-type} to avoid users explicitly writing derivable types in the surface language (e.g., types in let binding)
+And related work on typing \cite{type-sound,type-sound-1}, guarantees the soundness of type system for syntactic sugar.
 
 \paragraph{Meta-language Design.}
 Our meta-language is designed built upon the skeletal semantics \cite{skeleton},
  which can capture the behaviour of a language construct in a single rule.
 By providing different interpretation,
  the skeletal semantics can build consistency between abstract and concrete interpretations.
-It has similars structure in behaviour description,
- but there are sharp differences from ours:
-(1) We use two rules to describe evaluation and typing respectively, instead of a single rule in skeleton;
-(2) Different from in skeleton, where a filter has various definition in different interpretation, 
- there is only one interpretation in our meta-language and the meta-functions are pre-defined.
-(3) We permit the use of monad in computation to cover side effects.
 K-framework \cite{K-framework}, Ott \cite{Ott} also allow users to define the semantics formally.
 The semantics defined in K is rewrite-based, using matching logic.
 For ease to use, K provides an executable interpreter and a program verifier.

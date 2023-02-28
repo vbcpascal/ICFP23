@@ -1,6 +1,6 @@
 \section{Case Study}\label{sec:eval}
 
-In this section, we evaluate Osazone by an example, with seven language implemented.
+In this section, we evaluate Osazone by an example, with eight language implemented.
 We aim to show how the language is progressively extended and specialized by translation rules.
 The languages discussed in this section and their relation are shown in the Fig. \ref{fig:langs},
  where horizontal arrows represent meta-extensions and monad extensions,
@@ -13,42 +13,78 @@ The languages discussed in this section and their relation are shown in the Fig.
 \end{figure}
 
 %  implementing some languages based on \STLC. 
-We start with meta-extensions on \STLC.
+Some of these language have been discussed.
+We start with \STLC, a language with lambda calculus and Boolean values.
+From \STLC, we define \textsc{Bool} using translation rules.
+By extending \textsc{Bool} with meta-extensions, we get $\textsc{Bool}_{\text{pair}}$ supporting pairs and projection.
+With two additional translation rules, we implement a DSL \textsc{Adder} that can simulate half adders and full adders.
+
+From another dimension, we start with meta-extensions on \STLC.
 Language constructs pairs, sums, fixpoints and lists,
  introduced in Chapter 11 of Types and Programming Languages\cite{tapl} are tested.
 And let bindings and ascription are implemented by translation rules.
 We name the new language as \STLCex.
 % In this language, we will talk about the impact of fixpoints on abstraction.
 
-Then, we introduce reference by monad extension, getting \textsc{Ref}.
+Then, we introduce reference and I/O by monad extension, getting \textsc{Ref}.
 Taking \textsc{Ref} as the host language,
  we implement an imperative language \textsc{Imp}.
 % The point we should care about in \textsc{Imp} is that,
 %  recursive translation rules are declared in $\<while>$.
 % As an extension of our framework,
-%  we will discuss weak-abstraction semantic derivation.
-
-After that, we make \textsc{Ref} support I/O, getting \RefIO.
-Based on \RefIO, we implement a DSL named \textsc{Robot}.
+%  we will discuss weak-abstraction semantics derivation.
+%
+% After that, we make \textsc{Ref} support I/O, getting \RefIO.
+Based on \textsc{Imp}, we implement a DSL named \textsc{Robot}.
 The language assumes that a robot is located at some starting coordinates,
  and users can control its movement, or print out its position with commands.
 In this example, We will talk about how to access ``global variables'' in the translation rules.
 
-\subsection{\STLCex: Fixpoint}
+\subsection{\STLCex: Fixpoint}\label{sec:fix}
 
 Fixpoint is a common approach to implement recursion in functional programming language.
 As a primitive language construct, the evaluation rule and typing rule of $\<fix>$ are specified:
 \begin{align*}
-  \EE{\<fix>~e} & \cqq \Let{λx:t.e_1}{\EE{e}} \EE{e_1[\<fix>~(λx:t.e_1)/x]} \\
-  \TT{\<fix>~e} & \cqq \TT{e}:(t_1->t_2\mid t_1=t_2 |> t_1). 
+  \ctr{Fix}{ \<fix>~e} & \cqq \Let{λx:t.e_1}{\EE{e}} \EE{e_1[\<fix>~(λx:t.e_1)/x]}
+  % \TT{\<fix>~e} & \cqq \TT{e}:(t_1->t_2\mid t_1=t_2 |> t_1). 
 \end{align*}
 
 Since an expression with substituion are evaluated,
  the evaluation rule is not structural.
 And as mentioned above, nonstructural evaluation rule should be considered how to maintain abstraction.
-\todo{}
 
-\subsection{\textsc{Imp}: Recursive Translation Rules}
+In fact, thanks to lambda exposure and the existing discussion on substitution, fixpoint is easy to solve.
+However, unfolding according to the rules of $\<fix>$ leads to non-termination of the algorithm.
+We assume that fix can be preserved in the DSL--for a language that contains recursion is straightforward.
+We add the following rule to the $\dd$:
+\[ \dd(\HH{\<fix>~\mexp}) = \Let{λx\!:\!t.e_1}{\dd(\HH{\mexp})} \HH{\<fix>~(λx:t.e_1)} \]
+where we do not expand the substitution with fixpoint resursively.
+The above rule is equivalent to the extended rule in Section \ref{sec:alg-ex}, but the $\<fix>$ is kept in the rules for readability.
+
+\begin{example}
+\[ \<iseven> => \<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<if>~(x=lit~0)~\<true>~(\<if>~(x=lit~1)~\<false>~(ie~(x-lit~2)))) \]
+  
+The first step is lambda exposure. The following translation rules are generated.
+\begin{align*}
+  \<iseven>'~e_1~e_2 & => \<if>~(e_2=lit~0)~\<true>~(\<if>~(e_2=lit~1)~\<false>~(e_1~(e_2-lit~2))) \\
+  \<iseven> & => \<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x)
+\end{align*}
+
+The evaluation rules of language constructs used by $\<iseven>'$ all have structural semantics.
+So the evaluation rule of $\<iseven>'$ is also structural.
+The evaluation rule of $\<iseven>$ can be derived by:
+\begin{align*}
+  & \ctr{IsEven}{\<iseven>} \\
+  \cqq~ & \dhl{\HH{\<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x)}} \\
+  =~ & \Let{λx'\!:\!t.e}{\dhl{\HH{λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x}}} \HH{\<fix>~(λx':t.e)} \\
+  =~ & \HH{\<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x)}
+\end{align*}
+Because of lambda exposure, $\<iseven>'$ is a DSL construct. The abstraction property holds.
+\end{example}
+
+
+
+\subsection{\textsc{Imp}: Recursive Translation Rules}\label{sec:while}
 
 Our \textsc{Imp} language is defined by translation rules based on \textsc{Ref},
  which means the use of variables should be reference-based.
@@ -82,44 +118,50 @@ We still write dereferences in the following discussion.
 
 Some other common language constructs in \textsc{Imp} are defined in Fig. \ref{fig:imp}.
 But $\<while>$, whose definition does not satisfy requirement \ref{req:no-recursion}, is our concern.
-The semantic derivation algorithm will fail:
+By the algorithm extension of Section \ref{sec:alg-ex}, we have
 \begin{align*}
-  & \EE{\<while>~e_1~\<do>~e_2~\<end>} \\ 
+  & \ctr{While}{\<while>~e_1~\<do>~e_2~\<end>} \\ 
   \cqq~~ & \dhl{\EE{\<if>~e_1~(e_2; \<while>~e_1~\<do>~e_2~\<end>)~()}} \\
   =~~ & \EE{e_1}:\branch{
         \<true> |> \Let{()}{\EE{e_2}} \dhl{\EE{\<while>~e_1~\<do>~e_2~\<end>}} \\&
         \<false> |> ()
-    }
+    } \\
+  =~~ & \EE{e_1}:\branch{
+      \<true> |> \Let{()}{\EE{e_2}} \EE{\<while>~e_1~\<do>~e_2~\<end>} \\&
+      \<false> |> ()
+  }
 \end{align*}
-Consider that we discard this step of expansion, the evaluation rule of $\<while>$ can be derived as follows, 
- which is not structural but correct:
-\[ 
-  \EE{\<while>~e_1~\<do>~e_2~\<end>} \cqq \EE{e_1}:\branch{
-    \<true> |> \Let{()}{\EE{e_2}} \EE{\<while>~e_1~\<do>~e_2~\<end>} \\&
-    \<false> |> ()
-  } 
-\]
+% Consider that we discard this step of expansion, the evaluation rule of $\<while>$ can be derived as follows, 
+%  which is not structural but correct:
+% \[ 
+%   \ctr{While}{\<while>~e_1~\<do>~e_2~\<end>} \cqq \EE{e_1}:\branch{
+%     \<true> |> \Let{()}{\EE{e_2}} \EE{\<while>~e_1~\<do>~e_2~\<end>} \\&
+%     \<false> |> ()
+%   } 
+% \]
 Because $\<while>$ itself is a language construct in the DSL,
- we can think of it as satisfying weak abstraction if we keep it in the evaluation rule.
-The more serious problem is the type derivation.
-It is reasonable that $\<while>$ has a recursive evaluation,
- but the typing of $\<while>$ should not be.
-If the above approach is applied, an error typing rule is generated:
-\begin{align*}
-  \TT{\<while>~e_1~\<do>~e_2~\<end>} \cqq~
-  & \Let{\<bool>}{\TT{e_1}} \Let{\<unit>}{\TT{e_2}} \\
-  & \Let{t_2}{\TT{\<while>~e_1~\<do>~e_2~\<end>}} \<unit>:(t_3 \mid t_2=t_3 |> t_2)
-\end{align*}
-In this instance, the typing rule must be specified manually.
+ we can think of it as satisfying abstraction if we keep it in the evaluation rule.
 
-% More problem arise when \textsc{Imp} is used as a host language.
-% When a language construct is translated to $\<while>$,
-%  abstraction is difficult to guarantee.
-% For example, $\<for>$ can be defined as:
-% \[ \<for>~(e_1;e_2;e_3)~\<do>~e_4 => e_1;\<while>~e_2~\<do>~(e_4;e_3)~\<end> \]
+% The more serious problem is the type derivation.
+% It is reasonable that $\<while>$ has a recursive evaluation,
+%  but the typing of $\<while>$ should not be.
+% If the above approach is applied, an error typing rule is generated:
+% \begin{align*}
+%   \TT{\<while>~e_1~\<do>~e_2~\<end>} \cqq~
+%   & \Let{\<bool>}{\TT{e_1}} \Let{\<unit>}{\TT{e_2}} \\
+%   & \Let{t_2}{\TT{\<while>~e_1~\<do>~e_2~\<end>}} \<unit>:(t_3 \mid t_2=t_3 |> t_2)
+% \end{align*}
+% In this instance, the typing rule must be specified manually.
+
+More problem arise when \textsc{Imp} is used as a host language.
+When a language construct is translated to $\<while>$,
+ abstraction is difficult to guarantee.
+For example, $\<for>$ can be defined as follows, but we cannot derive an evaluation rule without $\<while>$.
+\[ \<for>~(e_1;e_2;e_3)~\<do>~e_4 => e_1;\<while>~e_2~\<do>~(e_4;e_3)~\<end> \]
 
 
-\subsection{\textsc{Robot}: Limitation on Global Variables}
+
+\subsection{\textsc{Robot}: Access to Global Variables}
 
 The goal of this language is to achieve simple control of robots in a two-dimensional plane.
 A sample program of \text{Robot} is:

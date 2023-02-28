@@ -1,13 +1,14 @@
 \section{Translation Rules and Semantics Lifting}\label{sec:tr}
 
-In this section, we describe the most important part of our method.
+In this section, we will discuss translation rules and semantics lifting algorithm.
 We assume that there exists a sufficiently powerful host language (\STLC{} with extensions).
 And a DSL will be defined by translation rules based on this host language.
-We first give some concepts of translation rules and impose some requirements for it.
+We first give some concepts of translation rules and impose some requirements.
 Then, we present the semantics lifting algorithm formally with examples.
 We will illustrate two basic properties of the algorithm: correctness and abstraction.
 In the proofs, why structural rules are important will be explained.
-Finally, we will introduce lambda abstraction and application to refine the algorithm and proofs.
+After that, nonstructural parts, lambda abstraction and application will be discussed.
+Finally, we will provide some extensions to refine the algorithm and proofs.
 
 \subsection{Translation Rules}
 
@@ -18,19 +19,19 @@ Finally, we will introduce lambda abstraction and application to refine the algo
 % The distinction between translation rules and syntactic sugar is that it not only simplifies the syntax, 
 %  but also can be used to describe more operations.
 
-A translation rule $tr$ defines a new constructor $c_n$ in meta-language, with shape 
+A translation rule $tr$ defines a new constructor $c_n$, with shape 
 \[ c_n~\mexp_{x_1}\cdots \mexp_{x_n} => \mexp \]
  where free expression variables in $\mexp$ must appear in LHS.
 We use $LHS(tr)$ and $RHS(tr)$ to denote the expressions on either side of $=>$.
 We call constructors defined by translation rules \textit{surface constructors}.
-Each constructor has only one signature,
- which means parameter list and pattern-based translation are not allowed.
+% Each constructor has only one signature,
+Pattern-based translation rules or those with parameter list are not allowed.
 
 \begin{requirement}\label{req:tr-unique}
   Each surface constructor must be defined by a unique translation rule.
 \end{requirement}
 
-If a closed expression $\cexp$ is constructed by $c_n$, define by $tr$,
+If a closed expression $\cexp$ is constructed by $c_n$,
  then there exists an environment $Σ$ satisfying $Σ(LHS(tr))=\cexp$,
  and $Σ(RHS(tr))$ is called \textit{one-step translation} (or desugaring), 
  written as $\ds{\cexp}$.
@@ -75,7 +76,7 @@ The filters we have used all satisfy this assumption.
 Another assumption, requires that translations do not affect the success of pattern matching.
 This is a requirement for rules in the host language.
 For example, $\Let{λx\!:\!t.~\<if>~e_1~e_2~\<false>}{\HH{e}} \cdots$ is not allowed.
-Because $\Let{λx\!:\!t.~e_1~\<and>~e_2}$ cannot match the above pattern.
+Because $λx\!:\!t.~e_1~\<and>~e_2$ cannot match the above pattern.
 It is actually natural that any time pattern matching should relate to the value of evaluation and not to the structure of expression itself.
 
 \begin{assumption}\label{asm:pat-ok}
@@ -130,18 +131,23 @@ The translation rule itself is not allowed.
 
 % Taking all these considerations into account, we give the following requirements.
 
-% \subsubsection{Hygiene}
+\subsubsection{Hygiene}
 
-% \todo{{the title}}
-% Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
-%   variable bindings are possible to be hidden by macros, and vice versa.
-% For example, we define a translation rule $or'$ via $\<let>$:
-% \[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
-%  where $``x"$ is a literal identifier. 
-% Then the expression $\<let>~x:\<bool>=\<false>~\<in>~(\<true>~or'~x)$ will be fully translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
-% Fortunately, thanks to the requirement \ref{req:close}, the variables in the RHS must be locally bound. 
-% Therefore, we can modify the names of variables safely.
-% \textit{We treat literals variables bound in the RHS as mutable and always fresh.}
+Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
+  variable bindings are possible to be hidden by macros, and vice versa.
+For example, we define a translation rule $or'$ via $\<let>$:
+\[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
+ where $``x"$ is a literal identifier. 
+Then the expression $\<let>~x:\<bool> =\<false>~\<in>~(\<true>~or'~x)$ will be fully translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
+
+The closed translation rules ensure no unbound identifier exceptions \cite{infer-scope}.
+Therefore, we can modify the names of variables safely just like $\alpha$--equivalence.
+
+\begin{assumption}
+  We treat literals variables bound in the RHS as mutable and always fresh.
+  And the translation is always hygienic.
+\end{assumption}
+
 % We use $\texttt{@}$ to denote fresh variables, and $or'$ will be written as:
 % \[ e_1~or'~e_2 => \<let>~\texttt{@x}=e_1~\<in>~\<if>~\texttt{@x}~\texttt{@x}~e_2. \]
 
@@ -165,7 +171,7 @@ For each language construct defined by a translation rule,
 % For a DSL defined by multiple translation rules, 
 %  we derive the evaluation and typing rules and add them to the language individually.
 
-% And now we will give the algorithm of semantic derivation. 
+% And now we will give the algorithm of semantics derivation. 
 Suppose a host language $L$ based on \STLC{}. % is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
 %  where $S_p=\{\Exp,\Type\}$.
 We now have a set of translation rules to define DSL.
@@ -183,7 +189,7 @@ Suppose the translation rule $tr$ has shape $c_n~exp_1\cdots exp_n => e$,
 % In the following, we will talk about how to derive the evaluation rule.
 We aim to get the evaluation rule of $c_n$.
 
-The core idea of the semantic derivation has been shown in overview:
+The core idea of the semantics derivation has been shown in overview:
  expand evaluation of compound expressions recursively according to the rules in $R_{\mE}$
  until all the evaluation are unexpandable.
 Formally, $\ctr{Name}{LHS(tr)}=\dd(\HH{RSH(tr)})$, the definition of $\dd$ is shown in Fig. \ref{fig:sd}.
@@ -196,9 +202,9 @@ Formally, $\ctr{Name}{LHS(tr)}=\dd(\HH{RSH(tr)})$, the definition of $\dd$ is sh
     \dd(\Let{pat}{b_1} b_2) & = \Let{pat}{\dd(b_1)} \dd(b_2) \\
     \dd(\HH{\mexp_x}) & = \HH{\mexp_x} \\  
     \dd(\HH{\mexp_b}) & = \HH{\mexp_b} \\
-    \hspace{8em} \dd(\HH{c~\mexp_1\cdots \mexp_m}) 
+    \hspace{8em} \dd(\HH{c_h~\mexp_1\cdots \mexp_m}) 
       & = \dd(Σ(b)) \hspace{20pt} \text{if there exists $Σ$ and $\ctr{C}{\mexp}\cqq b$ in $L$,} \\
-      & \hspace{61pt} \text{such that $Σ(\mexp)=c~\mexp_1\cdots \mexp_m$} \nonumber \\
+      & \hspace{61pt} \text{such that $Σ(\mexp)=c_h~\mexp_1\cdots \mexp_m$} \nonumber \\
     % \dd(\EE{f_p(\mexp_1'\cdots \mexp_n')}) & = \EE{f_p(\mexp_1'\cdots \mexp_n')} \\
     \dd(F(\mexp_1\cdots \mexp_n)) & = F(\mexp_1\cdots \mexp_n) \\
     \noalign{\raggedright \hspace{2em} \bf Expression:}
@@ -239,7 +245,7 @@ We pick up the $\<let>$ defined in introduction as the second example.
 % The language construct $\<let>$ is a common syntactic sugar, defined by lambda abstraction and application.
 % Considering $\<let>$ as a translation rule, 
 Example \ref{exm:let} presents the derivation of its evaluation rule.
-% Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda lifting.
+% Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda exposure.
 The last step is simplification, since that both left and right sides are constructed by $λ$.
 Simplification is sometimes useful for abstraction property, for instance in this example,
  where the evaluation rule of $\<let>$ no longer depends on lambda abstraction (even if this is allowed).
@@ -263,7 +269,7 @@ Simplification is sometimes useful for abstraction property, for instance in thi
 
 \subsection{Properties}
 
-With the semantic lifting algorithm, the evaluation rule of $c_n$ are generated.
+With the semantics lifting algorithm, the evaluation rule of $c_n$ are generated.
 We expect the rule to have the following properties:
 \begin{itemize}
   \item Correctness: a closed expression $\ce$ in $L'$, should have the same value as 
@@ -438,16 +444,15 @@ A structural derived rule always satisfies the abstraction property.
 Strong abstraction property futher illustrates the importance of structural evaluation rules.
 In STLC, however, we need to work with nonstructural language constructs: lambda abstraction and application.
 
-\subsection{Preprocessing: Lambda Lifting}
+\subsection{Preprocessing: Lambda Exposure}
 
-
-We have already exemplified how lambda abstractions break the abstraction property in semantic lifting.
+We have already exemplified how lambda abstractions break the abstraction property in semantics lifting.
 The solution to this problem is to expose the lambda abstractions in the translation rules 
  and define them as new language constructs of the DSL.
 For the outermost lambda abstractions, the transformation is straightforward. 
 The inner lambda abstractions, on the other hand, need to be extracted recursively.
 The challenge here is to ensure that the translation rules are closed.
-Fortunately, lambda lifting can help us.
+Fortunately, lambda exposure can help us.
 Formally, for the translation rule $tr$ which defines $c_n'$:
 \newcommand{\laml}[1]{\uparrow_λ\!\!(#1)}
 \begin{align}
@@ -459,35 +464,33 @@ Formally, for the translation rule $tr$ which defines $c_n'$:
   \laml{\mexp_x} & = \mexp_x \\
   \laml{\mexp_b} & = \mexp_b
 \end{align}
-where $\laml{\bullet}$ is lambda lifting transformation, with the generation of some translation rules.
+where $\laml{\bullet}$ is lambda exposure transformation, with the generation of some translation rules.
 The first rule states that if a lambda abstraction is applied directly in the translation rule, 
  then it does not need to be lifted because it does not break the abstraction (which can essentially be written as a $\<let>$).
 The second is the main rule, which generates a new constructor $c_n'$ to describe the semantics of a lambda abstraction.
 Any expression variables of $LHS(tr)$ used in $e$ (i.e., parameters of $c_n$) need to be applied by $c_n'$.
 In addition, any variable $x_j$ which have been bound and captured by $e$ are also required to be included,
  by an new expression variable $e_j$, which ensures the closure of translation rules.
-Note that the newly generated $c_n'$ needs to process lambda lifting recursively,
+Note that the newly generated $c_n'$ needs to process lambda exposure recursively,
  and may generate some more translation rules.
+The lambda exposure is pretty like the lambda lifting for inner abstractions \cite{lambda-lifting}.
 
 % The following lemma clearly holds.
 
 \begin{lemma}
-  Lambda lifting preserves requirements \ref{req:no-recursion} and \ref{req:close}.
+  Lambda exposure preserves requirements \ref{req:no-recursion} and \ref{req:close}.
 \end{lemma}
 
-lambda lifting has been studied for correctness preservation \cite{lambda-lifting}.
+The correctness of lambda exposure is pretty obvious.
 For abstractness, all generated translation rules either have no lambda abstraction or the lambda abstraction is lifted, i.e. replaced by a new DSL construct $c_n'$.
 If a translation rule has no lambda abstractions, its evaluation rule can be derived as usual.
 Otherwise, the part breaking abstraction has been replaced by the DSL constructs.
 
 \begin{theorem}
-  Lambda lifting maintains correctness and abstraction.
+  Lambda exposure maintains correctness and abstraction.
 \end{theorem}
 
-% \begin{proof}
-%   The generated translation rules defined without lambda abstraction satisfy the requirements of strong abstraction.
-  
-% \end{proof}
+In addition, Lambda exposure is applicable to any language construct that produces delayed evaluations.
 
 \subsection{Substitution}
 
@@ -512,23 +515,101 @@ For example, the above equation can be expressed as:
     \_ |> \HH{λx\!:\!t.~e_1[e_2/y]}} = ():\branch{
       \_ \mid x=y |> λx\!:\!t.~e_1 \\&
       \_ |> λx\!:\!t.~e_1[e_2/y]} \]
-
+where the pattern matching here is to find the satisfied condition.
 Therefore, in order to cover the substitution,
  just expand the evaluation containing substitution statically in semantics lifting.
 %  The transformation is correct (the CLOSED requirement is important). 
-The abstractness holds since the expressions used for substitution in application are values.
+% The abstractness holds since the expressions used for substitution in application are values.
+We add the following rule to $\dd$:
+\[ \dd(\HH{(c~\mexp_1\cdots\mexp_n)[e/x]}) = ():\branch{
+      \_ \mid cond_1 |> \dd(\HH{Σ(\mexp_1')}) \\&
+      \cdots \\&
+      \_ \mid cond_m |> \dd(\HH{Σ(\mexp_m')}) \\  
+} \]
+where the substituion rule of $c$ is:
+\[ (c~\mexp_{x_1}\cdots\mexp_{x_n})[e/x] = \left\{ \begin{aligned}
+      & \mexp_1' & cond_1 \\
+      & \cdots \\
+      & \mexp_m' & cond_m 
+    \end{aligned} \right. \]
+and $\mexp_i'$ is expression with substitution, $Σ(c~\mexp_{x_1}\cdots\mexp_{x_n})=c~\mexp_1\cdots\mexp_n$.
+
+\begin{example}
+  Consider the translation rule defined:
+  \[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
+  The evaluation rule of $\<or>'$ is derived as follows:
+
+  \begin{align*}
+    \ctr{OrP}{e_1~or'~e_2} 
+    & \cqq \dhl{\HH{\<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2}} \\
+    & = \Let{v_1}{\HH{e_1}} \dhl{\HH{(\<if>~x~x~e_2)[v_1/x]}} \\
+    & = \Let{v_1}{\HH{e_1}} \dhl{\HH{\<if>~x[v_1/x]~x[v_1/x]~e_2[v_1/x]}} \\
+    & = \Let{v_1}{\HH{e_1}} \dhl{\HH{x[v_1/x]}}: \branch{
+          \<true> |> \dhl{\HH{x[v_1/x]}} \\&
+          \<false> |> \dhl{\HH{e_2[v_1/x]}} } \\
+    & = \Let{v_1}{\HH{e_1}} v_1: \branch{
+          \<true> |> v_1 \\&
+          \<false> |> \HH{e_2[v_1/x]}} 
+  \end{align*}
+
+  Since we assume the translation to be hygienic, or rather,
+  here $x$ is an arbitrary fresh variable and cannot be used in $e_2$.
+  Therefore the rule can be reduced to
+
+  \[ \ctr{OrP}{e_1~or'~e_2} \cqq \Let{v_1}{\HH{e_1}} v_1: \branch{
+        \<true> |> v_1 \\&
+        \<false> |> \HH{e_2}} \]
+\end{example}
+
+Hygienic translation guarantees correctness. 
+According to the above rules, the substitution for expressions eventually converges to the substitution for expression variables.
+Also, since the expressions used for substitution are values, abstractness holds.
 
 \begin{theorem}
   Substitution maintains correctness and abstraction.
 \end{theorem}
 
-\subsection*{Summary}
+\subsection{Summary and Extensions}\label{sec:alg-ex}
 
-We introduce the semantic lifting algorithm in this section.
+We have introduced the semantics lifting algorithm in this section.
 We find that translation rules defined with language constructs with structural evaluation rules keeps structural.
-The lambda abstraction and application, are specifically discussed so that the semantic lifting algorithm supports, and maintains abstraction.
+The lambda abstraction and application, are specifically discussed so that the semantics lifting algorithm supports, and maintains abstraction.
 Thus, for a language containing structural and nonstructural parts,
  the lifting in the structural part is always safe and remains structural.
 Therefore, the abstraction is also guaranteed when we define a DSL again based on the current DSL defined by translation rules.
-For the nonstructural parts, we need to apply lambda lifting similarly to maintain the abstraction.
+For the nonstructural parts, we have a trade-off that depends on the specific problem as well as the reasonableness of the abstractness breakdown..
 Then, we achieve a vertical growth of the language: specialization by translation rules.
+
+Now we are going to extend our algorithm slightly to enhance its usefulness. The use of these extensions is a trade-off.
+These extensions may result in abstraction not being guaranteed.
+
+\paragraph{Substitution with non-value expression}
+
+In general, the expressions to substitute are values.
+This holds for both application and let binding.
+In the above strategy, we require the substitution rule to be applied in the valuation.
+However, if the expression used for substitution is not a value,
+ such as fixpoint, the above approach may not terminate.
+For this case, we add the following rule:
+\[ \dd(\HH{e[e'/x]}) = \HH{e[e'/x]} \qquad \text{if $e'$ is not a value}. \]
+We discuss fixpoint more extensively in Section \ref{sec:fix}.
+
+\paragraph{Recursive Translation Rules}
+
+Requirement \ref{req:no-recursion} specifies that the translation rule cannot be defined with language construct of itself,
+ otherwise the expression cannot be fully translated.
+However this is feasible for translation one step at a time. 
+This method is called lazy desugaring \cite{lazy-desg}.
+Another problem then is how to recursively expand the rules in semantics lifting.
+In fact, we cannot find such a solution.
+Consider that the new language construct $c_n$ itself is a DSL construct.
+We can think of it as satisfying abstraction.
+We add the fllowing rule to $\dd$:
+\[ \dd(\HH{c_n~\mexp_1\cdots \mexp_n}) = \HH{c_n~\mexp_1\cdots \mexp_n} \]
+
+But only the language construct of its definition itself satisfies the abstraction,
+ the expressions as arguments cannot be guaranteed. 
+In addition, the translation rules defined by $c_n$ cannot remove the language construct in the derivation,
+ and therefore must not satisfy abstraction.
+We discuss $\<while>$ as an example in Section \ref{sec:while}.
+

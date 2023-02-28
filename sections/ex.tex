@@ -28,6 +28,7 @@ Meta-extensions are direct extensions to the host language by
   \begin{align*}
     & \ctr{Lit}{lit~i} \cqq lit~i \\
     & \ctr{Plus}{e_1+e_2} \cqq \Let{lit~i_1}{\EE{e_1}} \Let{lit~i_2}{\EE{e_2}} plus(lit~i_1,lit~i_2) \\
+    & \ctr{Minus}{e_1-e_2} \cqq \Let{lit~i_1}{\EE{e_1}} \Let{lit~i_2}{\EE{e_2}} minus(lit~i_1,lit~i_2) \\
     & \ctr{Lt}{e_1 < e_2} \cqq \Let{lit~i_1}{\EE{e_1}} \EE{e_2}:\branch{
         lit~i_2 \mid i_1 <_i i_2 |> \<true> \\&
         lit~\_ |> \<false> 
@@ -72,7 +73,7 @@ Meta-extensions are direct extensions to the host language by
 
 \subsection{Monad Extensions}\label{sec:dsl-monad}
 
-Monad extension \cite{monad-1,monad-2} is the technique for side effects in computation without changing the original semantic definition.
+Monad extension \cite{monad-1,monad-2} is the technique for side effects in computation without changing the original semantics definition.
 By monad $m$, various language features can be defined, such as environment, store, nondeterminism, I/O etc.
 In order to put these together in a modular way, we use a mechanism called \textit{monad transformers} \cite{monad-tr}, ranged over by $m_t$.
 We will add the language features in \STLC,

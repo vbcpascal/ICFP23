@@ -7,13 +7,13 @@ In this section, we define a meta language for defining language semantics, and 
 %We use $L$ to refer to a language defined by meta-language like \STLC.
 %In the remainder of this section, we will indicate such language with an $L$ to distinguish from the meta-language.
 Our meta-language is based on Skeleton \cite{skeleton}, a powerful tool 
-for a skeletal semantics of a language, where each skeleton describes the complete semantic behavior of a language construct. 
+for a skeletal semantics of a language, where each skeleton describes the complete semantics behavior of a language construct. 
 In Skeleton, 
 a skeleton body is defined by a sequence of bones,
 which are recursive computations (called hooks), filters, or branches.
 Two new features of our language are
-(1) We use pattern matching in place of some filters in branches;
-(2) We pass the flow variables of states implicitly using monads.
+(1) We use pattern matching in place of branches and some filters;
+(2) We support monads to avoid pass flow variables of states implicitly.
 
 %Skeleton focuses on illustrating the consistency of concrete and abstract interpretations.
 %The meaning of filters varies in different goals.
@@ -25,7 +25,7 @@ Two new features of our language are
 
 %\subsection{Meta-Language}\label{sec:meta}
 
-For example, the following rule defines the semantic of references (Types and Programming Languages \cite{tapl}, chap. 13).
+For example, the following rule defines the semantics of allocation (Types and Programming Languages \cite{tapl}, Chap. 13).
 \[ \ctr{Ref}{\<ref>~e} \cqq \Let{v}{\HH{e}} \Let{l}{\mathit{newLoc}} \Let{()}{\mathit{store}(l,v)} loc~l \]
 The left-hand side is specified by a constructor and a list of \textit{expression variables}.
 Each expression variable has a \textit{sort}, which illustrates the type of the expression in the meta-language.
@@ -36,10 +36,10 @@ The filter $\mathit{newLoc}$ is used to allocate a new cell in storage,
  and the result is bound to $l$, whose sort is a base sort $\mathit{Location}$.
 Filters represent the primitive operations of meta-language, which are pre-defined.
 We assume that any user understands these filters.
-$store$ puts the value $v$ into the location $l$ and always returns a unit $()$.
+$\<store>$ puts the value $v$ into the location $l$ and always returns a unit $()$.
 Instead of binding it to a variable, we check the result directly by pattern matching.
 The last bone stands for the return value of this rule,
- where $loc$ is a constructor that constructs the $l$ as an $\Exp$.\footnote{Both pattern matching and results with constructors in skeleton need to be implemented via filter.
+ where $loc$ is a constructor that constructs the $l$ as an $\Val$.\footnote{Both pattern matching and results with constructors in skeleton need to be implemented via filter.
  Since we are concerned with semantics, as a concrete interpretation in Skeleton, we simplify the design here.}
 
 Reference actually requires a global storage, 
@@ -94,10 +94,11 @@ We write $Σ(\mexp)$ to replace all expression variables $\mexp_x\in dom(Σ)$ wi
 An environment $Σ$ is \textit{closed} for expression $\mexp$, when $Σ(\mexp)$ is a closed expression.
 
 Furthermore, we introduce substitution in the meta-language.
-Substitution is a special metalanguage operation, but not a hook or filter. 
+Substitution is a special metalanguage operation. % , but not a hook or filter.
 % \footnote{But it can be defined as a filter in Skeleton.}
 The substitution rules are defined according to the scope.
 Currently, we require the users to explicitly define the substitution rules.
+An expression containing a substitution is also an expression and is only used in hooks.
 
 \subsection{Rules of Meta-Language}
 
@@ -109,11 +110,12 @@ $\mexp_{x_1}\cdots \mexp_{x_n}$ are expression variables,
 and $b$ is the rule body.
 Assume that a countable set of monads, ranged over by $m$.
 Given a program sort $s_1$, the rules of $s_1$ have output sort $m~s_2$,
- where $m$ is the monad for side-effects.
+ written as $out(s_1)=m~s_2$,
+ where $m$ is the monad for side effects.
 When no side effects are introduced, $m$ is specified as identity monad, which can be omitted.
 The rule body is composed of bones, shown in Fig. \ref{fig:body}.
 We use $\mathit{fsort}(F)$ to represent the signature of filters, of the form $(s_1\cdots s_n) -> m~(s_1'\cdots s_m')$.
-We require that each filter in the bone has the same monad as the output flow sort of the rule.
+We require that each filter in the bone has the same monad as the output sort of the rule.
 Pattern matching is used to match an expression to a pattern, possibly generating new expression variable bindings.
 We use $\mathit{match(pat,\mexp)}$ to indicate an attempt to match $\mexp$ with $pat$,
  getting a FAIL or an environment $Σ$ for the body of branch.
@@ -154,7 +156,7 @@ We use $\mathit{match(pat,\mexp)}$ to indicate an attempt to match $\mexp$ with 
 
 A \textit{closed bone} $\cb$ is a bone without any free expression variables,
  which can be reduced to an expression.
-Also, we extend the environment to bone as $Σ(b)$, which replaces free expression variables in $dom(Σ)$.
+Also, we extend the environment application to bone as $Σ(b)$, which replaces free expression variables in $dom(Σ)$.
 
 % In our meta-language, $\mathit{return}$ or $\mathit{bind}$ in the body of rules are used implicit.
 % An expression variable bound with sort $m~s$ is not allowed.
@@ -165,24 +167,8 @@ Also, we extend the environment to bone as $Σ(b)$, which replaces free expressi
 A \textit{Language} $L$ consists of a set of program sorts $S_p$;
  a set of language constructs $C$ with signatures;
  a set of rules $R$ for each language constructs.
-%  a set of meta-functions $F$, devided into monadic ones $F_m$ and pure ones $F_p$.
 In particular, in \STLC{}, $S_p=\{\Exp,\Val,\Type\}$.
-% $H$ can be seperated into a set of evaluation rules $R_{\mE}$ and a set of typing rules $R_{\mT}$.
 The evaluation rules of \STLC{} are defined in Fig. \ref{fig:stlc} whose output sort is $\Val$.
-% But when typing \STLC, a context (or environment) mapping variables to types is necessary.
-% Instead of making the signature $\mT$ be $\Exp -> Ctx -> \Type$,
-%  we introduce state monad to describe context modification\footnote{
-%   A more direct approach is to use the reader monad and change the environment locally via $\mathit{local}$.
-%   But $\mathit{local}$ needs a monadic computation as argument, which is not allowed.
-%  },
-%  with monadic meta-functions $searchCtx$, $updateCtx$ and $restoreCtx$.
-% When typing lambda abstractions $λx:t.e$, the type of variable $x$ should be updated into context first with $updateCtx$.
-% After typing the body of lambda abstractions $e$, restore the type of variable $x$ in the context.
-% In the concrete implementation, the stack of the context is used as the state.
-% When searching for the type of a variable, the context at the topmost level is looked up.
-% Updating the context will push the new context onto the stack and restoring will pop one.
-% So the signature of $\mT$ is modified to $\Exp -> (State~\mathit{CtxStack})~\Type$.
-% And the typing rules are defined in Fig. \ref{fig:stlc_type}.
 
 \begin{figure}[t!]
   \begin{align*}
@@ -199,36 +185,12 @@ The evaluation rules of \STLC{} are defined in Fig. \ref{fig:stlc} whose output 
   \label{fig:stlc}
 \end{figure}
 
-% \begin{figure}[t!]
-%   \begin{align*}
-%     \TT{\<true>}  & \cqq \<bool>  \\
-%     \TT{\<false>} & \cqq \<bool>  \\
-%     \TT{\<if>~e_1~e_2~e_3} & \cqq
-%       \lt~\<bool> = \TT{e_1};~
-%       \lt~t_2 = \TT{e_2};~
-%       \TT{e_3}:(t_3 \mid t_2 = t_3 |> t_2)   \\
-%     \TT{x}        & \cqq searchCtx~x \\
-%     \TT{λx:t.e}   & \cqq \lt~\_=updateCtx~x~t;~\lt~t'=\TT{e}; \\
-%                   & \hspace{13pt} \lt~\_=restoreCtx;~t->t' \\
-%     \TT{e_1~e_2}  & \cqq \Let{t_1->t}{\TT{e_1}} \TT{e_2}:(t_2\mid t_1=t_2|>t)
-%   \end{align*}
-%   \caption{Typing Rules of \STLC}
-%   \label{fig:stlc_type}
-% \end{figure}
-
-% Substitution, as a pure meta-function, is divided from $F_p$ and described as a set of substitution rules $R_{subst}$.
-% The signature of substitute is $sig(subst)=(\Exp,\Id,\Exp)->\Exp$.
-% The substitution rules of language constructs should be specified by developers, omitted here.
-
-% In the rest of this paper, a language (\STLC{} or its extensions) are presented as follows:
-% \[ L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F_p, F_m \rangle \]
-
 \begin{requirement}
   For any constructor $c$ with sort $\Exp$, the evaluation rule should be unique.
   % (Variable has no evaluation rules.)
 \end{requirement}
 
-When a closed expression $\cexp$ is evaluated (or typed) in $L$,
+When a closed expression $\cexp$ is evaluated in $L$,
  we need to find a rule in $L$ and apply it to $\cexp$.
 We write $L[\cexp]=Σ(b)$, if there exists a rule $\textsc{Name}(c~\mexp_{x_1}\cdots \mexp_{x_n}) \cqq b$ in $R$ and an environment $Σ$,
  so that $\cexp=Σ(c~\mexp_{x_1}\cdots \mexp_{x_n})$.
@@ -238,14 +200,10 @@ We write $L[\cexp]=Σ(b)$, if there exists a rule $\textsc{Name}(c~\mexp_{x_1}\c
 \subsection{Semantics of Meta-Language}
 
 In this section, we present the semantics of our meta-language.
-% We will illustrate the semantics of the above rules in two ways. 
-% First we give the translation of the above rule to Haskell as our method to implement the interpreter for language defined.
-% Then we show its operational semantics, which will be used in the following proofs. 
-% We will not elaborate on the consistency of the two.
-We pick the big-step operational semantics.
+% We pick the big-step operational semantics.
 Considering that the interpretation of our meta-language is actually a concrete interpretation,
  the semantics of our meta-language can be covered by Skeleton.
-For clarity, we follow the style of modular structural operational semantics (MSOS) \cite{msos} in Fig. \ref{fig:seman-meta}.
+But for clarity, we follow the style of modular structural operational semantics (MSOS) \cite{msos}.
 The semantics of meta-language can be defined by the relation $\cb \rr{X} \mexp$,
  where $\cb$ is a closed bone, and $\mexp$ is the result.
 $X$ is a label, to describe transformation of global state, related to monad $m$.
@@ -257,8 +215,8 @@ We require that $X_1$ and $X_2$ are composable: if $X_1=\langle σ,σ'\rangle$ a
 then $X_1;X_2=\langle σ,σ''\rangle$. 
 The semantics of meta-language are given in Fig. \ref{fig:seman-meta}.
 And the evaluation rules of filters are pre-defined. 
-For example, the rule of $store$ can be written as:
-\[ \inference{σ'=\{σ,loc\mapsto \mexp\}}{store(loc,\mexp) \rr{\langleσ,σ'\rangle} ()}. \]
+For example, the rule of $\<store>$ can be defined as follows:
+\[ \inference{σ'=\{σ,l\mapsto \mexp\}}{store(l,\mexp) \rr{\langleσ,σ'\rangle} ()}. \]
 
 % We start by the pure computation.
 % Given a closed expression $\cexp$ in language $L$, for an interpretation $h$,
@@ -294,32 +252,32 @@ For example, the rule of $store$ can be written as:
 Remember that our host language is designed to define DSL.
 In overview, we have given an example of evaluation rule derivation.
 The abstraction is guaranteed because the evaluation rule of $\<if>$ is applied.
-We find that we can always expand the evaluation containing a certain language constructs with the corresponding evaluation rules.
+We find that if we can always apply corresponding evaluation rules to the evaluations containing language constructs.
 And when a language construct appears but is not used for evaluation, that language construct will be kept in the rule, which breaks abstraction.
 
-A evaluation rule that guarantees that all subexpressions are used for evaluation is \textit{structural}.
+An evaluation rule is \textit{structural} if it guarantees that all subexpressions are used for evaluation.
 The structural here is to be distinguished from the structural operation semantics \cite{sos}.
- Our structural refers to a bottom-up computation, similar to the $fold$ on catamorphism.
+ Our structural refers to a bottom-up computation, similar to the $\mathit{fold}$ on catamorphism.
 If some subexpression $e_i$ is used without evaluation directly, 
 %  or some expression being evaluated is not $e_i$,
  then the rule is not structural.
 Most language constructs can be written in a structural way.
 In the case of \STLC, the evaluation rule of $\<if>$ is structural.
 And the evaluation rules of lambda abstraction and application are not structural.
-The former uses the subexpression not evaluated, while the latter evaluates an expression containing substitution (used as an argument of pure function).
-We rewrite these rules with nonstructural parts highlighted:
+The former uses the subexpression not evaluated, while the latter evaluates an expression containing substitution (used as an argument of substitution).
+We rewrite these rules with nonstructural parts underlined:
 % We rewrite these rules in the style of meta-language, where nonstructural parts are highlighted:
 % weak alert
 % \newcommand{\wkalt}[1]{\colorbox{lightgray}{#1}}
 \newcommand{\wkalt}[1]{\textcolor{magenta}{#1}}
 \begin{align*}
-  \ctr{Abs}{λx:t.~e} & \cqq λx:t.~\wkalt{e} \\
-  \ctr{App}{e_1~e_2} & \cqq \Let{λx:t.e}{\HH{e_1}} \Let{v_2}{\HH{e_2}} \wkalt{\HH{e[v_2/x]}}.
+  \ctr{Abs}{λx:t.~e} & \cqq λx:t.~\underline{e} \\
+  \ctr{App}{e_1~e_2} & \cqq \Let{λx:t.e}{\HH{e_1}} \Let{v_2}{\HH{e_2}} \HH{\underline{e[v_2/x]}}.
 \end{align*}
 
-\begin{definition}[Structural]\label{def:str}
+\begin{definition}[Structural Evaluation Rule]\label{def:str}
 A rule $\textsc{Name}(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
-$\mexp_{x_i}$ is not used to be matched, as an argument in any filter, applied by any constructor in $b$.
+$\mexp_{x_i}$ is not used to be matched, as an argument in any filter or substituion, or applied by any constructor in $b$.
 % \begin{itemize}
 %   \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
 %    $\mexp_{x_i}$ is not used to be matched, as an argument in any filter, applied by any constructor, or as the result value in $b$;
@@ -328,8 +286,8 @@ $\mexp_{x_i}$ is not used to be matched, as an argument in any filter, applied b
 % \end{itemize}
 \end{definition}
 
-Structural evaluation rules are the key to ensure the abstraction in semantic lifting.
-In other words, any language construct with nonstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantic lifting.
+Structural evaluation rules are the key to ensure the abstraction in semantics lifting.
+In other words, any language construct with nonstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantics lifting.
 % The typing rules, fortunately, are all structural in \STLC.
 
 In addition, pattern matching should be a match of a value of computation,
