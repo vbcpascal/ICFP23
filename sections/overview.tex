@@ -108,13 +108,13 @@ Consider the $\<if>$ construct with generic subexpressions denoted by $e_1$, $e_
 
 In our meta-language, the evaluation of $\<if>$ expression is given by the following single rule:
 \[
-  \EE{\<if>~e_1~e_2~e_3} \cqq
-  \EE{e_1}: \branch{
-    \<true>  |> \EE{e_2} \\&
-    \<false> |> \EE{e_3}
+  \ctr{If}{\<if>~e_1~e_2~e_3} \cqq
+  \HH{e_1}: \branch{
+    \<true>  |> \HH{e_2} \\&
+    \<false> |> \HH{e_3}
   }.
 \]
-Here, $\EE{e_1}$ identifies the evaluation of subexpression $e_1$,
+Here, $\HH{e_1}$ identifies the evaluation of subexpression $e_1$,
  whose result is used to select a specific branch by pattern matching (after the colon).
 Then, subsequent computations are processed (after the triangle).
 If the value of $e_1$ is $\<true>$, then $e_2$ will be evaluate;
@@ -126,14 +126,14 @@ Consider that for any $e_1$ and $e_2$,
  the value of $e_1~\<and>~e_2$ should be the same as $\<if>~e_1~e_2~\<false>$.
 Hence, according to the translation rule and evaluation rules of the host language, we have
 \begin{align*}
-  \EE{e_1~\<and>~e_2} 
-    & \cqq \EE{\<if>~e_1~e_2~\<false>} & \text{(Translation rule)} \\
-    & = \EE{e_1}: \branch{
-        \<true>  |> \EE{e_2} \\&
-        \<false> |> \EE{\<false>}
+  \ctr{And}{e_1~\<and>~e_2} 
+    & \cqq \HH{\<if>~e_1~e_2~\<false>} & \text{(Translation rule)} \\
+    & = \HH{e_1}: \branch{
+        \<true>  |> \HH{e_2} \\&
+        \<false> |> \HH{\<false>}
       } & \text{(Evaluation rule of $\<if>$)} \\
-    & = \EE{e_1}: \branch{
-        \<true>  |> \EE{e_2} \\&
+    & = \HH{e_1}: \branch{
+        \<true>  |> \HH{e_2} \\&
         \<false> |> \<false>
       } & \text{(Evaluation rule of $\<false>$)} 
 \end{align*}

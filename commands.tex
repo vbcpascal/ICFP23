@@ -26,7 +26,7 @@
 \command{andf[and_f], andfp[and_f']}
 \command{halfa[half\mhyphen adder], fulla[full\mhyphen adder], Rf[Ref]}
 
-\reservestyle[\mathinner]{\Constructor}{\mathbf}
+\reservestyle{\Constructor}{\textsc}
 \Constructor{Bool, True, False}
 \Constructor{Int, Lit, Plus, Eq, Lt}
 \Constructor{Abs, App, Loc, Ref}
@@ -49,6 +49,7 @@
 \newcommand{\Let}[2]{\lt~#1=#2;~}
 
 \newcommand{\Exp}{\mathit{Exp}}
+\newcommand{\Val}{\mathit{Val}}
 \newcommand{\Type}{\mathit{Type}}
 \newcommand{\Id}{\mathit{Id}}
 \newcommand{\Int}{\mathit{Int}}
@@ -56,11 +57,12 @@
 \newcommand{\store}{\mathit{store}}
 \newcommand{\fetch}{\mathit{fetch}}
 \newcommand{\return}{\mathit{return}}
+\newcommand{\Identity}{\mathit{Identity}}
 
 \newcommand{\cqq}{\coloneqq}
-\newcommand{\EE}[1]{\mathcal{E}(#1)}
-\newcommand{\EEL}[1]{\mathcal{E}_{L}(#1)}
-\newcommand{\EELL}[1]{\mathcal{E}_{L'}(#1)}
+\newcommand{\EE}[1]{H(#1)}
+\newcommand{\EEL}[1]{H_{L}(#1)}
+\newcommand{\EELL}[1]{H_{L'}(#1)}
 \newcommand{\TT}[1]{\mathcal{T}(#1)}
 \newcommand{\TTL}[1]{\mathcal{T}_{L}(#1)}
 \newcommand{\TTLL}[1]{\mathcal{T}_{L'}(#1)}
@@ -96,6 +98,11 @@
 \newcommand{\rr}[1]{\xrightarrow{~#1~}} % ---X-->
 
 \newcommand{\miff}{\text{iff}}
-
+ 
 \usepackage{tikz}
 \usepackage{pifont}
+
+\newcommand{\ctr}[2]{\textsc{#1}({#2})}
+\newcommand{\HH}[1]{H(#1)}
+
+\newcommand{\ck}[1]{\mathit{checker}(#1)}
