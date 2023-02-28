@@ -1,18 +1,18 @@
 \section{Introduction}
 
-Language-oriented programming (LOP) \cite{LOP} is solving a class of problems by designing one or more new domain-specific languages (DSLs).
-To avoid building common languages constructs such as loops and branches,
-developers tend to implement DSLs based on another general-purpose programming language (called \textit{host language}).
-Developers can define DSL based on the language features of the host language, rendering programs with domain-specific forms.
-Languages with features like macros and higher-order functions are frequently employed as host languages\cite{macro-dsl,macro-dsl-2}.
-These features can be treated as a method to implement translation from the DSL to the host language.
+Language-oriented programming (LOP) \cite{LOP} features solving a class of problems by designing one or more new domain-specific languages (DSLs).
+To avoid reimplementing common language constructs like loops and branches,
+developers tend to implement DSLs based on another general-purpose programming language (called host language).
+Developers can define a DSL based on the language features of the host language, rendering programs with domain-specific forms.
+Languages with features like macros and higher-order functions are frequently employed\cite{macro-dsl,macro-dsl-2}.
+These features can be treated as methods to implement translations from DSLs to the host language.
 By specifying translation rules from the DSL to the host language, developers can obtain a DSL interpreter naturally.
 This type of DSL is called embedded DSL (eDSL).
 
 Despite eDSL can significantly reduce implementation efforts, DSL users find it inconvenient because of the inevitable need to learn the concepts of host language and understand error messages.
 This problem is called \textit{abstraction leakage} \cite{Abstraction},
  which means the users writes a DSL program which is translated into the host language,
- thus the executed program is pretty differently from the original program.
+ causing the executed program pretty differently from the original program.
 
 Pombrio et al. have made a great progress in maintenance of abstraction automatically for syntactic sugars.
 They proposed \textit{resugaring} \cite{resugar}, by selectively reorganizing the sequence of evaluations on the host language to the DSL according to the reverse translation rules.
