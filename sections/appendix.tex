@@ -1,0 +1,43 @@
+\section{Proofs}
+
+\subsection{Proof of Lemma \ref{lemma:sig-bone}}
+
+\begin{lemmaapp}
+  Support $\cb$ is a closed bone. Then:
+  \[ \cb \rr{X} v \quad\miff\quad \dd(\cb) \rr{X} v. \]
+\end{lemmaapp}
+
+\begin{proof}
+  By induction on a derivation of $\cb \rr{X} v$. 
+  The \textsc{Expression} and \textsc{Filter} cases are immediate, since $\dd(\cb)=\cb$.
+  The other cases are shown as follows:
+
+  Case \textsc{Hook}: let $\cb=\EE{e}$, where $e$ is a closed expression.
+  We consider each case separately according to $e$:
+  \begin{itemize}
+    \item $e$ is a base expression: $\dd(b)=b$;
+    \item $e=c~\cexp_1\cdots \cexp_n$: we have $\EE{e} \rr{X} v$, iff $L[e] \rr{X} v$.
+      Furthermore, according to the definition of $\dd$, 
+      we can find an environment $Σ$ and a rule $\EE{\mexp}\cqq b_1$ in $L$, such that $Σ(\mexp) = e$, $\dd(\EE{e})=\dd(Σ(b_1))$.
+      According to the definition, $Σ(b_1)=L[e]$.
+      Then $\dd(\EE{e})=\dd(L[e])$.
+      Since $e$ is a closed variable, $Σ(b_1)$ is a closed bone.
+      By the induction hypothesis, $L[e]\rr{X} v$ iff $\dd(L[e])\rr{X} v$.
+      Then, $\EE{e}\rr{X} v$, iff $\dd(\EE{e})\rr{X} v$.
+  \end{itemize}
+
+  Case \textsc{LetIn}: let $b=\Let{pat}{b_1} b_2$.
+    Then $b\rr{X} v$, iff the following judgements are satisfied:  
+    \[ b_1\rr{X_1}v_1 \quad Σ=match(pat,v_1) \quad Σ(b_2)\rr{X_2}v_2 \quad X=X_1;X_2, \]
+     where $Σ(b_2)$ is a closed bone.
+    By the induction hypothesis and Lemma \ref{lemma:del-sig}, we have
+    \begin{align*}
+      b_1\rr{X_1}v_1    & \quad\miff\quad \dd(b_1)\rr{X_1} v_1, \\
+      Σ(b_2)\rr{X_2}v_2 & \quad\miff\quad Σ(\dd(b_2))\rr{X_2}v_2
+    \end{align*} 
+    Therefore, we can apply rule \textsc{LetIn} to conclude
+    \[ \Let{pat}{\dd(b_1)} \dd(b_2) \rr{X} v \]
+    whose left-hand side equals to $\dd(b)$.
+
+  Case \textsc{Branch}: Similar.
+\end{proof}

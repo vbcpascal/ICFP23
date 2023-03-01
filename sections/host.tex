@@ -229,17 +229,20 @@ We rewrite these rules with nonstructural parts underlined:
 \end{align*}
 
 \begin{definition}[Structural Evaluation Rule]\label{def:str}
-A rule $\textsc{Name}(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if
-\begin{itemize}
-  \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
-    $\mexp_{x_i}$ is not used to be matched, as an argument of any filter or substitution, or applied by any constructor in $b$;
-  \item all the expressions that are hooked $H(\mexp)$ in $b$ must be $\mexp_{x_i}$.
-  \item all the constructor in $b$ must be used to construct a value.
-\end{itemize}
+A rule $\textsc{Name}(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural,
+if the body is composed of let bindings, pattern matching, hook of expression variable $H(\mexp_{x_i})$ and expressions with sort of $\Val$,
+and $\mexp_{x_i}$ is only used in hook.
+% \begin{itemize}
+%   \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
+%     $\mexp_{x_i}$ is not used to be matched, as an argument of any filter or substitution, or applied by any constructor in $b$;
+%   \item all the expressions that are hooked $H(\mexp)$ in $b$ must be $\mexp_{x_i}$.
+%   \item all the constructor in $b$ must be used to construct a value.
+% \end{itemize}
 \end{definition}
 
+The above definition can be formalized as $check$, whose input in the set of expression variables and a bone, and the output is whether the bone is structural. 
 Structural evaluation rules are the key to ensure the abstraction in semantics lifting.
-In other words, any language construct with nonstructural evaluation rule needs to be carefully accounted for in terms of how it will affect the semantics lifting.
+In other words, any language construct with nonstructural evaluation rule needs to be carefully accounted for in terms of how it affects the semantics lifting.
 % The typing rules, fortunately, are all structural in \STLC.
 
 In addition, pattern matching should be a match of a value of computation,

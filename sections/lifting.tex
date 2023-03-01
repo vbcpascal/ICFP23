@@ -38,8 +38,8 @@ If a closed expression $\cexp$ is constructed by $c_n$,
  which translates expressions of surface constructors recursively.
 But if a rule translates surface constructor $c_n$ to itself, 
  i.e., a recursive translation rule,
- the full translation is not terminated.
-Therefore, we propose the following requirements.
+ the full translation is not terminating.
+Therefore, we impose the following requirement.
 
 \begin{requirement}\label{req:no-recursion}
 For a translation rule $tr$, constructors in $RHS(tr)$ must be those of host language, or surface constructors defined earlier.
@@ -63,7 +63,7 @@ For example, given an expression $\<true>~\<and>~(\<false>~\<or>~\<true>)$ of \t
 The full translation can be naturally extended to bones by fully translating all the expressions recursively.
 We use $\DB{b}$ to express the full translation on a bone and omit its formal definition.
 
-In addition, we assume that all the filters and full translations are commutable.
+In addition, we assume that all the filters are commutable with the full translation.
 The filters we have used all satisfy this assumption.
 
 \begin{assumption}\label{asm:fun-ds}
@@ -76,7 +76,7 @@ Another assumption, requires that translations do not affect the success of patt
 This is a requirement for rules in the host language.
 For example, $\Let{λx\!:\!t.~\<if>~e_1~e_2~\<false>}{\HH{e}} \cdots$ is not allowed.
 Because $λx\!:\!t.~e_1~\<and>~e_2$ cannot match the above pattern.
-It is actually natural that any time pattern matching should relate to the value of evaluation and not to the structure of expression itself.
+It is natural that pattern matching should only rely on the value of evaluation and not on the structure of expression itself.
 
 \begin{assumption}\label{asm:pat-ok}
   Suppose $pat$ is a pattern used in a rule of language. Given $v$:
@@ -133,7 +133,7 @@ The translation rule itself is not allowed.
 \subsubsection{Hygiene}
 
 Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
-  variable bindings are possible to be hidden by macros, and vice versa.
+  variable bindings are possibly hidden by macros, and vice versa.
 For example, we define a translation rule $or'$ via $\<let>$:
 \[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
  where $``x"$ is a literal identifier. 
@@ -192,6 +192,7 @@ The core idea of the semantics derivation has been shown in overview:
  expand evaluation of compound expressions recursively according to the rules in $R_{\mE}$
  until all the evaluation are unexpandable.
 Formally, $\ctr{Name}{LHS(tr)}=\dd(\HH{RSH(tr)})$, the definition of $\dd$ is shown in Fig. \ref{fig:sd}.
+Note that here we skip the transformation of expressions containing substitutions for now.
 
 \begin{figure}
   $\ctr{Name}{c_n~exp_1\cdots exp_n}=\dd(\HH{e})$
@@ -204,6 +205,7 @@ Formally, $\ctr{Name}{LHS(tr)}=\dd(\HH{RSH(tr)})$, the definition of $\dd$ is sh
     \hspace{8em} \dd(\HH{c_h~\mexp_1\cdots \mexp_m}) 
       & = \dd(Σ(b)) \hspace{20pt} \text{if there exists $Σ$ and $\ctr{C}{\mexp}\cqq b$ in $L$,} \\
       & \hspace{61pt} \text{such that $Σ(\mexp)=c_h~\mexp_1\cdots \mexp_m$} \nonumber \\
+    \dd(\HH{\mexp[\mexp'/x]}) & = \HH{\mexp[\mexp'/x]} \\
     % \dd(\EE{f_p(\mexp_1'\cdots \mexp_n')}) & = \EE{f_p(\mexp_1'\cdots \mexp_n')} \\
     \dd(F(\mexp_1\cdots \mexp_n)) & = F(\mexp_1\cdots \mexp_n) \\
     \noalign{\raggedright \hspace{2em} \bf Expression:}
@@ -268,7 +270,7 @@ Simplification is sometimes useful for abstraction property, for instance in thi
 
 \subsection{Properties}
 
-With the semantics lifting algorithm, the evaluation rule of $c_n$ are generated.
+With the semantics lifting algorithm, the evaluation rule of $c_n$ is generated.
 We expect the rule to have the following properties:
 \begin{itemize}
   \item Correctness: a closed expression $\ce$ in $L'$, should have the same value as 
@@ -278,64 +280,29 @@ We expect the rule to have the following properties:
 \end{itemize}
 In this section, we will presents these properties formally.
 
-We use subscripts to distinguish in which language the computation is performed.
+\subsubsection{Correctness}
+We use subscripts to distinguish between in which language the computation is performed.
 Then, the correctness is
 \[ \EELL{\ce} \rr{X} v \quad\miff\quad \EEL{\DS{\ce}} \rr{X} \DS{v}. \]
 
+% For the proof of the correctness theorem,
+%  we first illustrate that $\dd$ and environment application is commutable,
+%  and $\dd$ does not influence the result of a closed bone $\cb$.
+
 For the proof of the correctness theorem,
- we first illustrate that $\dd$ and environment application is commutable,
- and $\dd$ does not influence the result of a closed bone $\cb$.
+ the following two lemmas are necessary,
+ which describe some properties of $\dd$ in the above algorithm.
+The complete proof can be found in appendix.
 
 \begin{lemma}\label{lemma:del-sig}
   Support $Σ$ is closed for bone $b$. Then:
   \[ Σ(\dd(b)) \rr{X} v \quad\miff\quad \dd(Σ(b)) \rr{X} v. \]
 \end{lemma}
 
-Proved by induction on $b$.
-
-% \begin{proof}
-%   Induct on $b$. \todo{check this!}
-% \end{proof}
-
 \begin{lemma}\label{lemma:sig-bone}
   Support $\cb$ is a closed bone. Then:
   \[ \cb \rr{X} v \quad\miff\quad \dd(\cb) \rr{X} v. \]
 \end{lemma}
-
-\begin{proof}
-  By induction on a derivation of $\cb \rr{X} v$. 
-  The \textsc{Expression} and \textsc{Filter} cases are immediate, since $\dd(\cb)=\cb$.
-  The other cases are shown as follows:
-
-  Case \textsc{Hook}: let $\cb=\EE{e}$, where $e$ is a closed expression.
-  We consider each case separately according to $e$:
-  \begin{itemize}
-    \item $e$ is a base expression: $\dd(b)=b$;
-    \item $e=c~\cexp_1\cdots \cexp_n$: we have $\EE{e} \rr{X} v$, iff $L[e] \rr{X} v$.
-      Furthermore, according to the definition of $\dd$, 
-      we can find an environment $Σ$ and a rule $\EE{\mexp}\cqq b_1$ in $L$, such that $Σ(\mexp) = e$, $\dd(\EE{e})=\dd(Σ(b_1))$.
-      According to the definition, $Σ(b_1)=L[e]$.
-      Then $\dd(\EE{e})=\dd(L[e])$.
-      Since $e$ is a closed variable, $Σ(b_1)$ is a closed bone.
-      By the induction hypothesis, $L[e]\rr{X} v$ iff $\dd(L[e])\rr{X} v$.
-      Then, $\EE{e}\rr{X} v$, iff $\dd(\EE{e})\rr{X} v$.
-  \end{itemize}
-
-  Case \textsc{LetIn}: let $b=\Let{pat}{b_1} b_2$.
-    Then $b\rr{X} v$, iff the following judgements are satisfied:  
-    \[ b_1\rr{X_1}v_1 \quad Σ=match(pat,v_1) \quad Σ(b_2)\rr{X_2}v_2 \quad X=X_1;X_2, \]
-     where $Σ(b_2)$ is a closed bone.
-    By the induction hypothesis and Lemma \ref{lemma:del-sig}, we have
-    \begin{align*}
-      b_1\rr{X_1}v_1    & \quad\miff\quad \dd(b_1)\rr{X_1} v_1, \\
-      Σ(b_2)\rr{X_2}v_2 & \quad\miff\quad Σ(\dd(b_2))\rr{X_2}v_2
-    \end{align*} 
-    Therefore, we can apply rule \textsc{LetIn} to conclude
-    \[ \Let{pat}{\dd(b_1)} \dd(b_2) \rr{X} v \]
-    whose left-hand side equals to $\dd(b)$.
-
-  Case \textsc{Branch}: Similar.
-\end{proof}
 
 Before the proof of correctness, we will give a stronger lemma,
  of which correctness theorem is an special case.
@@ -351,7 +318,7 @@ Before the proof of correctness, we will give a stronger lemma,
 
   Case \textsc{Filter}: by assumption \ref{asm:fun-ds}. 
   
-  Case \textsc{Hook}: suppose that $b=\EE{e}$. There are three cases should be considered.
+  Case \textsc{Hook}: suppose that $b=\EE{e}$. There are two cases should be considered.
   \begin{itemize}    
     \item $e=c_n~\cexp_1\cdots \cexp_n$ where $c_n$ is a surface constructor defined by $c_n~\mexp_{x_1}\cdots \mexp_{x_n}=>\mexp$.
       Then $\EE{c_n~\cexp_1\cdots \cexp_n} \rr{X} v$ iff $L'[c_n~\mexp_1\cdots \mexp_n]\rr{X} v$.
@@ -418,61 +385,79 @@ Correctness is the foundation of the algorithm,
 Before the proof of abstraction property,
  we first present \textit{strong abstraction theorem}.
 
-% \begin{definition}[Strong Abstraction]
-%   Consider $L'$ is defined by translation rules on the host language $L$.
-%   Any constructor used in evaluation rules of $L'$ is value constructor.
-% \end{definition}
-
-\begin{theorem}[Strong Abstraction]
+\begin{theorem}[Strong Abstraction]\label{thm:str-abs}
   If all the evaluation rules of the host language $L$ are structural,
-  the derived rule maintain structural.
+  the derived rule maintains structural.
 \end{theorem}
 
-% A structural evaluation rule required that the constructors used must be value constructors.
-
+If the derived rule is structural, it means that all the constructs in it are used to construct values. Therefore, abstractness obviously holds.
 Consider the expressions evaluated during the process of $\dd$.
-The only intereting case is that the expression is a compound expression constructed by $c$.
+The only interesting case is that the expression is a compound expression constructed by $c$.
 Since the evaluation rule of $c$ is structural, the expressions evaluated must be the arguments of $c$.
 Due to the finite depth of RHS of the translation rule,
   they eventually converge to the evaluation of parameters,
-  or to the constant expressions.
+  or to the (constant) expressions as values.
 Because all the rules in expansion are structural, all the constructors are used to construct values.
 Therefore, the derived rule is structural.
-A structural derived rule always satisfies the abstraction property.
 
-Strong abstraction property futher illustrates the importance of structural evaluation rules.
-In STLC, however, we need to work with nonstructural language constructs: lambda abstraction and application.
+The theorem \ref{thm:str-abs} can be formalized as follows:
+If a translation rule is of the form $c_n~\mexp_{x_1}\cdots\mexp_{x_n}=>\mexp$,
+  then $check(\{\mexp_{x_1}\cdots\mexp_{x_n}\}, \dd(H(\mexp)))=\<true>$ holds.
+
+\begin{proof}
+  We just need to prove that given a set of expression variable $V$, 
+  and an expression $\mexp$ which is constructed by language constructs in $L$ and variables in $V$,
+  \[ check(V, \dd(H(\mexp))=\<true> \]
+
+Induct on $\mexp$.
+If $\mexp$ is an expression variable in $V$, $\dd(H(\mexp))=H(\mexp)$. The conclusion holds.
+
+If $\mexp$ is a compound expression $c~\mexp_1\cdots\mexp_m$, then there exists a rule of $c$ in language $L$ $\ctr{Name}{c~\mexp_{y_1}\cdots\mexp_{y_m}} \cqq b$ and an environment $\Sigma$ satisfying
+$\Sigma=\{\mexp_{y_1}\mapsto \mexp_1,\cdots, \mexp_{y_m}\mapsto \mexp_m\}$, such that $\dd(H(\mexp))=\dd(\Sigma(b))$, and $check(\{\mexp_{y_1}\cdots\mexp_{y_m}\},b)=\<true>$.
+Then induct on $b$. % ignoring cases making $check$ false.
+Since all the hooks in $b$ is like $H(\mexp_{y_i})$, they will be transformed into $\dd(H(\mexp_i))$.
+By inductive hypothesis, $check$ satisfies for $b$.
+% (1) If $b$ is of sort $\Val$, without $\mexp_{y_i}$ of sort $\Exp$ used,
+% then $\dd(\Sigma(b))=b$.
+% (2) If $b=H(\mexp_{y_i})$, $\dd(\Sigma(b))=\dd(H(\mexp_{i}))$.
+% By inductive hypothesis, $check(V, \dd(H(\mexp_{i}))=\<true>$ satisfies.
+% (3) If $b=\Let{pat}{b_1} b_2$, 
+\end{proof}
+
+Strong abstraction property illustrates the importance of structural evaluation rules.
+Moreover, new language constructs defined on language constructs with structural evaluation have structural evaluation rules as well.
+In STLC, however, not all the language constructs have structural semantics: lambda abstraction and application.
 
 \subsection{Preprocessing: Lambda Lifting}
 
-We have already exemplified how lambda abstractions break the abstraction property in semantics lifting.
-The solution to this problem is to expose the lambda abstractions in the translation rules 
+We have already examplified how lambda abstractions break the abstraction property in semantics lifting.
+The solution to this problem is to expose the body of lambda abstractions in the translation rules 
  and define them as new language constructs of the DSL.
-For the outermost lambda abstractions, the transformation is straightforward. 
-The inner lambda abstractions, on the other hand, need to be extracted recursively.
-The challenge here is to ensure that the translation rules are closed.
+For outermost lambda abstractions, the transformation is straightforward. 
+Inner lambda abstractions, on the other hand, need to be extracted recursively.
+The challenge here is to ensure that the generated translation rules are closed.
 Fortunately, lambda lifting can help us.
 Formally, for the translation rule $tr$ which defines $c_n'$:
 \newcommand{\laml}[1]{\uparrow_λ\!\!(#1)}
-\begin{align}
+\begin{align*}
   \laml{(λx:t.e_1)~e_2} & = (λx:t.\laml{e_1})~\laml{e_2} \label{ll:let} \\
+  \laml{λx:t.e} & = λx:t.e \qquad \text{if $e$ is a variable or expression variable} \\
   \laml{λx:t.e} & = λx:t.(c_n'~\mexp_1..\mexp_p ~ x_1..x_q) \\[-3pt]
     & \text{generating } c_n'~\mexp_1..\mexp_p ~ e_1..e_q => \laml{e[e_1/x_1..e_q/x_q]} \\[-3pt]
-    & \text{for each expression variable } \exp_i \text{ in } e \text{ and variable } x_j \text{ not bound in } e \\
+    & \text{for each expression variable } \mexp_i \text{ in } e \text{ and variable } x_j \text{ not bound in } e \\
   \laml{c~\mexp_1\cdots \mexp_n} & = c~\laml{\mexp_1}\cdots\laml{\mexp_n} \\
   \laml{\mexp_x} & = \mexp_x \\
   \laml{\mexp_b} & = \mexp_b
-\end{align}
+\end{align*}
 where $\laml{\bullet}$ is lambda lifting transformation, with the generation of some translation rules.
 The first rule states that if a lambda abstraction is applied directly in the translation rule, 
- then it does not need to be lifted because it does not break the abstraction (which can essentially be written as a $\<let>$).
-The second is the main rule, which generates a new constructor $c_n'$ to describe the semantics of a lambda abstraction.
-Any expression variables of $LHS(tr)$ used in $e$ (i.e., parameters of $c_n$) need to be applied by $c_n'$.
-In addition, any variable $x_j$ which have been bound and captured by $e$ are also required to be included,
- by an new expression variable $e_j$, which ensures the closure of translation rules.
-Note that the newly generated $c_n'$ needs to process lambda lifting recursively,
- and may generate some more translation rules.
-The lambda lifting is pretty like the lambda lifting for inner abstractions \cite{lambda-lifting}.
+ then it does not need to be lifted because it does not break the abstraction (which can be written as a $\<let>$).
+The second is the main rule, which generates a new constructor $c_n'$ to describe the behaviour of a lambda abstraction.
+Any expression variable of $LHS(tr)$ used in $e$ (i.e., parameters of $c_n$) needs to be applied by $c_n'$.
+In addition, any variable $x_j$ which has been bound and captured by $e$ is also required to be included,
+ by an new expression variable $e_j$, which ensures the closed requirement of translation rules.
+Note that the newly generated $c_n'$ needs to be processed by lambda lifting recursively,
+ and that may generate some more translation rules.
 
 % The following lemma clearly holds.
 
@@ -481,12 +466,10 @@ The lambda lifting is pretty like the lambda lifting for inner abstractions \cit
 \end{lemma}
 
 The correctness of lambda lifting is pretty obvious.
-For abstractness, all generated translation rules either have no lambda abstraction or the lambda abstraction is lifted, i.e. replaced by a new DSL construct $c_n'$.
-If a translation rule has no lambda abstractions, its evaluation rule can be derived as usual.
-Otherwise, the part breaking abstraction has been replaced by the DSL constructs.
+For abstraction, the inner language constructs are lifted, i.e. replaced by a new DSL construct $c_n'$.
 
 \begin{theorem}
-  Lambda lifting maintains correctness and abstraction.
+  lambda lifting maintains correctness and abstraction.
 \end{theorem}
 
 In addition, Lambda lifting is applicable to any language construct that produces delayed evaluations.
