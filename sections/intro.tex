@@ -10,9 +10,9 @@ By specifying translation rules from the DSL to the host language, developers ca
 This type of DSL is called embedded DSL (eDSL).
 
 Despite eDSL can significantly reduce implementation efforts, DSL users find it inconvenient because of the inevitable need to learn the concepts of host language and understand error messages.
-This problem is called \textit{abstraction leakage} \cite{Abstraction},
- which means the users writes a DSL program which is translated into the host language,
- thus the executed program is pretty differently from the original program.
+This problem is called \textit{abstraction leakage} \cite{Abstraction}:
+ the user writes a DSL program which will be translated into the host language,
+ causing the executed program is pretty differently from the original program.
 
 Pombrio et al. have made a great progress in maintenance of abstraction automatically for syntactic sugars.
 They proposed \textit{resugaring} \cite{resugar}, by selectively reorganizing the sequence of evaluations on the host language to the DSL according to the reverse translation rules.
