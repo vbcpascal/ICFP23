@@ -1,14 +1,13 @@
 \section{Translation Rules and Semantics Lifting}\label{sec:tr}
 
-In this section, we will discuss translation rules and semantics lifting algorithm.
-We assume that there exists a sufficiently powerful host language (\STLC{} with extensions).
-And a DSL will be defined by translation rules based on this host language.
-We first give some concepts of translation rules and impose some requirements.
+In this section, we discuss translation rules and the semantics lifting algorithm.
+We assume that there exists a sufficiently powerful extended host language (\STLC{} with extensions), and a DSL will be defined by translation rules to this host language.
+We first give informal and formal definitions of translation rules and make explicit some requirements.
 Then, we present the semantics lifting algorithm formally with examples.
-We will illustrate two basic properties of the algorithm: correctness and abstraction.
+We illustrate two basic properties of the algorithm: correctness and abstraction.
 In the proofs, why structural rules are important will be explained.
-After that, nonstructural parts, lambda abstraction and application will be discussed.
-Finally, we will provide some extensions to refine the algorithm and proofs.
+After that, the nonstructural parts, i.e. lambda abstraction and application, are discussed.
+Finally, we provide some extensions to further refine the algorithm and proofs.
 
 \subsection{Translation Rules}
 
@@ -22,7 +21,7 @@ Finally, we will provide some extensions to refine the algorithm and proofs.
 A translation rule $tr$ defines a new constructor $c_n$, with shape 
 \[ c_n~\mexp_{x_1}\cdots \mexp_{x_n} => \mexp \]
  where free expression variables in $\mexp$ must appear in LHS.
-We use $LHS(tr)$ and $RHS(tr)$ to denote the expressions on either side of $=>$.
+We use $LHS(tr)$ and $RHS(tr)$ to denote the expressions on either sides of $=>$.
 We call constructors defined by translation rules \textit{surface constructors}.
 % Each constructor has only one signature,
 Pattern-based translation rules or those with parameter list are not allowed.

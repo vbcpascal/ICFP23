@@ -1,13 +1,13 @@
 \section{Conclusion}
 
 In this paper, we propose a framework to lift language for domain-specific languages.
-The key idea of the method is to lift semantics for DSL to maintain abstraction,
+The key idea is to lift semantics for DSL to maintain abstraction,
  in order to ensure DSL standalone.
 Following this idea, we define a meta-language to describe the evaluation rules.
 We select a pure functional programming language \STLC{} as the host language.
-And base on \STLC, users can extend the host language to support new vocabularies and language features
+Based on \STLC, users can extend the host language to support new vocabularies and language features
  and specify the DSL constructs by translation rules.
 Based on the evaluation rules of the host language and translation rules, the evaluation rules of DSL can be derived.
-And the correctness and abstraction of the semantics derivation algorithm is proved.
+We proved the correctness and abstraction of the semantics derivation algorithm.
 In addition, we implement the tool Osazone, which is shown to be useful to develop DSLs.
 

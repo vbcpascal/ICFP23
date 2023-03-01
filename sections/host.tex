@@ -12,8 +12,8 @@ In Skeleton,
 a skeleton body is defined by a sequence of bones,
 which are recursive computations (called hooks), filters, or branches.
 Two new features of our language are
-(1) We use pattern matching in place of branches and some filters;
-(2) We support monads to avoid pass flow variables of states implicitly.
+(1) We use pattern matching in place of branches and filters for branch selection;
+(2) We support monads to avoid pass flow variables of states explicitly.
 
 %Skeleton focuses on illustrating the consistency of concrete and abstract interpretations.
 %The meaning of filters varies in different goals.
@@ -25,31 +25,31 @@ Two new features of our language are
 
 %\subsection{Meta-Language}\label{sec:meta}
 
-For example, the following rule defines the semantics of allocation (Types and Programming Languages \cite{tapl}, Chap. 13).
+For example, the following rule defines the semantics of $\<ref>$, used to allocate a reference and initialize the cell (Types and Programming Languages \cite{tapl}, Chap. 13).
 \[ \ctr{Ref}{\<ref>~e} \cqq \Let{v}{\HH{e}} \Let{l}{\mathit{newLoc}} \Let{()}{\mathit{store}(l,v)} loc~l \]
-The left-hand side is specified by a constructor and a list of \textit{expression variables}.
+The left-hand side is specified by name of the rule, a constructor and a list of \textit{expression variables}.
 Each expression variable has a \textit{sort}, which illustrates the type of the expression in the meta-language.
 For example, $e$ here has sort $\Exp$.
 The right-hand side can be seen as a sequence of \textit{bones}.
-The result of hook $H(e)$ is bound to an expression variable $v$, whose sort is $\Val$.
+The result of hook $H(e)$ is bound to an expression variable $v$, whose sort is $\Val$ (a subset of $\Exp$).
+$\mathit{newLoc}$ and $\<store>$ are filters, representing the primitive operations of meta-language, which are pre-defined.
+We assume that any user understands these filters.
 The filter $\mathit{newLoc}$ is used to allocate a new cell in storage,
  and the result is bound to $l$, whose sort is a base sort $\mathit{Location}$.
-Filters represent the primitive operations of meta-language, which are pre-defined.
-We assume that any user understands these filters.
 $\<store>$ puts the value $v$ into the location $l$ and always returns a unit $()$.
 Instead of binding it to a variable, we check the result directly by pattern matching.
 The last bone stands for the return value of this rule,
- where $loc$ is a constructor that constructs the $l$ as an $\Val$.\footnote{Both pattern matching and results with constructors in skeleton need to be implemented via filter.
+ where $loc$ is a constructor that constructs the location $l$ as an $\Val$.\footnote{Both pattern matching and results with constructors in skeleton need to be implemented via filter.
  Since we are concerned with semantics, as a concrete interpretation in Skeleton, we simplify the design here.}
 
-Reference actually requires a global storage, 
- and the filters $\mathit{newLoc}$ and $\mathit{store}$ will modify the storage.
-Without passing the state explicitly,
+Reference actually requires a global store, 
+ and the filters $\mathit{newLoc}$ and $\mathit{store}$ will modify the store.
+Without passing the store explicitly,
  we inscribe this side effect via monads.
-For example, the input flow sort is $\Exp$ and output flow sort here is $\mathit{State~Store}~\Val$,
+For example, the output sort of this rule is $\mathit{State~Store}~\Val$,
  where $\mathit{Store}$ maps locations to values.
 The output sorts of $\mathit{newLoc}$ and $\mathit{store}$ are also defined with this monad.
-In Haskell, the rule can be translated as:
+In Haskell, this rule can be translated as:
 \[ \mathit{eval~(Ref\ e) = do~~ \{ 
     v\leftarrow eval~e;
     l\leftarrow newLoc;
@@ -73,37 +73,22 @@ A constructor $c$ has a signature $sig(c)$, which is of the form $(s_1\cdots s_n
 A compound expression, written as $c(\mexp_1,\cdots,\mexp_n)$ or $c~\mexp_1\cdots\mexp_n$,
  is valid, if $sort(\mexp_i)=s_i$ for each $i\in [1..n]$.
 
-% \begin{example}
-% Expression $λx\!\!:\!\!\<bool>.~e$ in language $L$, is constructor $\<Abs>$ applied to ``x'', $\<bool>$ and expression variable $e$.
-%  ``x'' is a base expression, and $sort(``x")=\Id$;
-%  $\<bool>$ is constructor $\<Bool>$ applied to nothing.
-% The signature of $\<Abs>$ is $sig(\<Abs>)=(\Id,\Type,\Exp)->\Exp$, and its sort is $\Exp$.
-% The signature of $\<Bool>$ is $()->\Type$, and its sort is $\Type$.
-% \[
-%   \begin{array}{ccc}
-%     % \text{Language } L & & \text{Meta-Language} \\
-%     λx\!:\<bool>.~e & \leftrightarrow & \<Abs>(``x",\<Bool>(),e) \text{ or } \<Abs>~``x"~\<Bool>~e
-%   \end{array}
-% \]
-% \end{example}
-
 We use $i$ for expressions with sort $\Int$, $x$ for $\Id$, $e$ for $\Exp$, $v$ for $\Val$, and $t$ for $\Type$.
 A \textit{closed expression} $\cexp$ is an expression with no expression variables, generally refering to a concrete component in language $L$.
 Let $Σ$ be an \textit{environment} mapping from expression variables to expressions. 
 We write $Σ(\mexp)$ to replace all expression variables $\mexp_x\in dom(Σ)$ with $Σ(\mexp_x)$ in $\mexp$.
 An environment $Σ$ is \textit{closed} for expression $\mexp$, when $Σ(\mexp)$ is a closed expression.
 
-Furthermore, we introduce substitution in the meta-language.
-Substitution is a special metalanguage operation. % , but not a hook or filter.
-% \footnote{But it can be defined as a filter in Skeleton.}
-The substitution rules are defined according to the scope.
-Currently, we require the users to explicitly define the substitution rules.
+Furthermore, we introduce substitution $e[e'/x]$ in the meta-language.
+Substitution is a special metalanguage operation.
+% The substitution rules are defined according to the scope.
+% Currently, we require the users to explicitly define the substitution rules.
 An expression containing a substitution is also an expression and is only used in hooks.
 
 \subsection{Rules of Meta-Language}
 
 A rule describes the behaviour of a language construct.
-A rule of meta-language has the shape $\ctr{Name}{c~\mexp_{x_1}\cdots \mexp_{x_n}} \cqq b$, 
+A rule in meta-language has the shape $\ctr{Name}{c~\mexp_{x_1}\cdots \mexp_{x_n}} \cqq b$, 
 where $\textsc{Name}$ is the name of rule,
 $c$ is a constructor, 
 $\mexp_{x_1}\cdots \mexp_{x_n}$ are expression variables,
@@ -116,7 +101,7 @@ When no side effects are introduced, $m$ is specified as identity monad, which c
 The rule body is composed of bones, shown in Fig. \ref{fig:body}.
 We use $\mathit{fsort}(F)$ to represent the signature of filters, of the form $(s_1\cdots s_n) -> m~(s_1'\cdots s_m')$.
 We require that each filter in the bone has the same monad as the output sort of the rule.
-Pattern matching is used to match an expression to a pattern, possibly generating new expression variable bindings.
+Pattern matching is used to match an expression to patterns, possibly generating new expression variable bindings.
 We use $\mathit{match(pat,\mexp)}$ to indicate an attempt to match $\mexp$ with $pat$,
  getting a FAIL or an environment $Σ$ for the body of branch.
 
@@ -127,7 +112,7 @@ We use $\mathit{match(pat,\mexp)}$ to indicate an attempt to match $\mexp$ with 
       & \quad \mid H(\mexp) & \text{(Hook)} \\
       & \quad \mid F(\mexp_1\cdots \mexp_n) & \text{(Filter)} \\
       & \quad \mid b:(br_1\cdots br_n) & \text{(Pattern Matching)} \\
-      & \quad \mid \Let{pat}{b_1} b_2 & \text{(Sequence)} \\
+      & \quad \mid \Let{pat}{b_1} b_2 & \text{(Let Binding)} \\
     br \in Branch
       & ::= pat |> b \\
     pat \in \mathit{Pattern}
@@ -138,30 +123,9 @@ We use $\mathit{match(pat,\mexp)}$ to indicate an attempt to match $\mexp$ with 
 \label{fig:body}
 \end{figure}
 
-
-% Pure expressions are expressions $\mexp$ or computation results of pure meta-function $f_p$.
-% The meta-functions represent primitive operations, and we assume that users can always understand their meaning, like equality checking $(=)$.
-% Most of these functions are pre-defined.
-% Two types of meta-functions are mentioned here:
-%  monadic meta-functions, ranged over by $f_m$,
-%  pure meta-functions, ranged over by $f_p$.
-% They are the same if the interpretation is pure.
-% When monad is introduced,
-%  $f_m$ is function containing side effects, 
-%   whose signature is like $sig(f_m)=(s_1\cdots s_n)->m~s$;
-%  while $f_p$ is not,
-%   whose signature is like $sig(f_p)=(s_1\cdots s_n)->s$.
-% For example, $searchCtx$, $updateCtx$ and $restoreCtx$ are monadic meta-functions,
-%  equality checking $(=)$ and substitution are pure meta-functions.
-
 A \textit{closed bone} $\cb$ is a bone without any free expression variables,
  which can be reduced to an expression.
 Also, we extend the environment application to bone as $Σ(b)$, which replaces free expression variables in $dom(Σ)$.
-
-% In our meta-language, $\mathit{return}$ or $\mathit{bind}$ in the body of rules are used implicit.
-% An expression variable bound with sort $m~s$ is not allowed.
-% As a result, the method to tell whether a binding is pure is by checking if the bone is a pure expression.
-% \todo{not clear?}
 
 \subsection{Language Defined by Meta-Language}
 A \textit{Language} $L$ consists of a set of program sorts $S_p$;
@@ -217,19 +181,7 @@ The semantics of meta-language are given in Fig. \ref{fig:seman-meta}.
 And the evaluation rules of filters are pre-defined. 
 For example, the rule of $\<store>$ can be defined as follows:
 \[ \inference{σ'=\{σ,l\mapsto \mexp\}}{store(l,\mexp) \rr{\langleσ,σ'\rangle} ()}. \]
-
-% We start by the pure computation.
-% Given a closed expression $\cexp$ in language $L$, for an interpretation $h$,
-%  whose sort is $s_1 -> s_2$, if $sort(\cexp)=s_1$, 
-%  then $h(\cexp)$ will be computed to get a closed expression of sort $s_2$.
-% % For example, an expression is interpreted as a value if $h$ is evaluation, written as $\cexp -> v$.
-% % Here we use $v$ for the result of interpretation, which is a closed expression itself.
-% After monad is introduced, side effects can be embraced by labels in transformation \cite{msos}.
-% The operational semantics of meta-language are given in Fig. \ref{fig:seman-meta}.
-% \todo{Explain this in detail?}
-
-
-
+ 
 \begin{figure}
   \begin{gather*}
     \inference[Expression]{}{\mexp \lr \mexp} \\
@@ -255,11 +207,12 @@ The abstraction is guaranteed because the evaluation rule of $\<if>$ is applied.
 We find that if we can always apply corresponding evaluation rules to the evaluations containing language constructs.
 And when a language construct appears but is not used for evaluation, that language construct will be kept in the rule, which breaks abstraction.
 
-An evaluation rule is \textit{structural} if it guarantees that all subexpressions are used for evaluation.
+We call this \textit{structural} property.
+% An evaluation rule is \textit{structural} if it guarantees that all subexpressions are used after direct evaluation and evaluated expressions are subexpressions.
 The structural here is to be distinguished from the structural operation semantics \cite{sos}.
- Our structural refers to a bottom-up computation, similar to the $\mathit{fold}$ on catamorphism.
+ Our structural refers to a bottom-up computation, similar to a $\mathit{fold}$ or catamorphism over the syntax.
 If some subexpression $e_i$ is used without evaluation directly, 
-%  or some expression being evaluated is not $e_i$,
+ or some expression being evaluated is not $e_i$,
  then the rule is not structural.
 Most language constructs can be written in a structural way.
 In the case of \STLC, the evaluation rule of $\<if>$ is structural.
@@ -276,14 +229,13 @@ We rewrite these rules with nonstructural parts underlined:
 \end{align*}
 
 \begin{definition}[Structural Evaluation Rule]\label{def:str}
-A rule $\textsc{Name}(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
-$\mexp_{x_i}$ is not used to be matched, as an argument in any filter or substituion, or applied by any constructor in $b$.
-% \begin{itemize}
-%   \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
-%    $\mexp_{x_i}$ is not used to be matched, as an argument in any filter, applied by any constructor, or as the result value in $b$;
-  % \item all the expressions that are hooked $H(\mexp)$ in $b$ must be $\mexp_{x_i}$.
-  % \item all the constructor in $b$ must used to construct a value.
-% \end{itemize}
+A rule $\textsc{Name}(c~\mexp_{x_1}\cdots \mexp_{x_n})=b$ is structural, if
+\begin{itemize}
+  \item for each $\mexp_{x_i}$ satisfying $sort(\mexp_{x_i})=sort(c)$, 
+    $\mexp_{x_i}$ is not used to be matched, as an argument of any filter or substitution, or applied by any constructor in $b$;
+  \item all the expressions that are hooked $H(\mexp)$ in $b$ must be $\mexp_{x_i}$.
+  \item all the constructor in $b$ must be used to construct a value.
+\end{itemize}
 \end{definition}
 
 Structural evaluation rules are the key to ensure the abstraction in semantics lifting.
