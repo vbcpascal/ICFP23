@@ -80,7 +80,7 @@ We write $Σ(\mexp)$ to replace all expression variables $\mexp_x\in dom(Σ)$ wi
 An environment $Σ$ is \textit{closed} for expression $\mexp$, when $Σ(\mexp)$ is a closed expression.
 
 Furthermore, we introduce substitution $e[e'/x]$ in the meta-language.
-Substitution is a special metalanguage operation.
+Substitution is a special meta-language operation.
 % The substitution rules are defined according to the scope.
 % Currently, we require the users to explicitly define the substitution rules.
 An expression containing a substitution is also an expression and is only used in hooks.
@@ -240,7 +240,7 @@ and $\mexp_{x_i}$ is only used in hook.
 % \end{itemize}
 \end{definition}
 
-The above definition can be formalized as $check$, whose input in the set of expression variables and a bone, and the output is whether the bone is structural. 
+The above definition can be formalized as $strl$, whose input in the set of expression variables and a bone, and the output is whether the bone is structural. 
 Structural evaluation rules are the key to ensure the abstraction in semantics lifting.
 In other words, any language construct with nonstructural evaluation rule needs to be carefully accounted for in terms of how it affects the semantics lifting.
 % The typing rules, fortunately, are all structural in \STLC.
@@ -254,5 +254,3 @@ In addition, pattern matching should be a match of a value of computation,
 
 % This rule is a weaker version of the structural rule,
 %  which requires that parameters $\mexp_{x_i}$ cannot be used for pattern matching directly.
-
-% To formalize definition \ref{def:str} and requirement \ref{req:pat}, we define $\mathit{checker}$:

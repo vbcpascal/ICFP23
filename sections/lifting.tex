@@ -290,9 +290,10 @@ Then, the correctness is
 %  and $\dd$ does not influence the result of a closed bone $\cb$.
 
 For the proof of the correctness theorem,
- the following two lemmas are necessary,
- which describe some properties of $\dd$ in the above algorithm.
-The complete proof can be found in appendix.
+ the following two lemmas are introduced.
+These lemmas describe the properties of $\dd$ on closed bones,
+ which can be proved by induction.
+% The complete proof can be found in appendix.
 
 \begin{lemma}\label{lemma:del-sig}
   Support $Σ$ is closed for bone $b$. Then:
@@ -388,9 +389,12 @@ Before the proof of abstraction property,
 \begin{theorem}[Strong Abstraction]\label{thm:str-abs}
   If all the evaluation rules of the host language $L$ are structural,
   the derived rule maintains structural.
+  Formally,
+  if a translation rule is of the form $c_n~\mexp_{x_1}\cdots\mexp_{x_n}=>\mexp$,
+  then $strl( \{\mexp_{x_1} \cdots \mexp_{x_n} \}, \dd(H(\mexp)) ) =\<true>$ holds.
 \end{theorem}
 
-If the derived rule is structural, it means that all the constructs in it are used to construct values. Therefore, abstractness obviously holds.
+If the derived rule is structural, it means that all the constructs in it are used to construct values. Therefore, abstraction obviously holds.
 Consider the expressions evaluated during the process of $\dd$.
 The only interesting case is that the expression is a compound expression constructed by $c$.
 Since the evaluation rule of $c$ is structural, the expressions evaluated must be the arguments of $c$.
@@ -400,39 +404,45 @@ Due to the finite depth of RHS of the translation rule,
 Because all the rules in expansion are structural, all the constructors are used to construct values.
 Therefore, the derived rule is structural.
 
-The theorem \ref{thm:str-abs} can be formalized as follows:
-If a translation rule is of the form $c_n~\mexp_{x_1}\cdots\mexp_{x_n}=>\mexp$,
-  then $check(\{\mexp_{x_1}\cdots\mexp_{x_n}\}, \dd(H(\mexp)))=\<true>$ holds.
-
 \begin{proof}
   We just need to prove that given a set of expression variable $V$, 
   and an expression $\mexp$ which is constructed by language constructs in $L$ and variables in $V$,
-  \[ check(V, \dd(H(\mexp))=\<true> \]
+  \[ strl(V, \dd(H(\mexp))=\<true> \]
 
 Induct on $\mexp$.
 If $\mexp$ is an expression variable in $V$, $\dd(H(\mexp))=H(\mexp)$. The conclusion holds.
 
 If $\mexp$ is a compound expression $c~\mexp_1\cdots\mexp_m$, then there exists a rule of $c$ in language $L$ $\ctr{Name}{c~\mexp_{y_1}\cdots\mexp_{y_m}} \cqq b$ and an environment $\Sigma$ satisfying
-$\Sigma=\{\mexp_{y_1}\mapsto \mexp_1,\cdots, \mexp_{y_m}\mapsto \mexp_m\}$, such that $\dd(H(\mexp))=\dd(\Sigma(b))$, and $check(\{\mexp_{y_1}\cdots\mexp_{y_m}\},b)=\<true>$.
-Then induct on $b$. % ignoring cases making $check$ false.
+$\Sigma=\{\mexp_{y_1}\mapsto \mexp_1,\cdots, \mexp_{y_m}\mapsto \mexp_m\}$, such that $\dd(H(\mexp))=\dd(\Sigma(b))$, and $strl(\{\mexp_{y_1}\cdots\mexp_{y_m}\},b)=\<true>$.
+Then induct on $b$. % ignoring cases making $strl$ false.
 Since all the hooks in $b$ is like $H(\mexp_{y_i})$, they will be transformed into $\dd(H(\mexp_i))$.
-By inductive hypothesis, $check$ satisfies for $b$.
+By inductive hypothesis, $strl$ satisfies for $b$.
 % (1) If $b$ is of sort $\Val$, without $\mexp_{y_i}$ of sort $\Exp$ used,
 % then $\dd(\Sigma(b))=b$.
 % (2) If $b=H(\mexp_{y_i})$, $\dd(\Sigma(b))=\dd(H(\mexp_{i}))$.
-% By inductive hypothesis, $check(V, \dd(H(\mexp_{i}))=\<true>$ satisfies.
+% By inductive hypothesis, $strl(V, \dd(H(\mexp_{i}))=\<true>$ satisfies.
 % (3) If $b=\Let{pat}{b_1} b_2$, 
 \end{proof}
 
 Strong abstraction property illustrates the importance of structural evaluation rules.
 Moreover, new language constructs defined on language constructs with structural evaluation have structural evaluation rules as well.
 In STLC, however, not all the language constructs have structural semantics: lambda abstraction and application.
+First, we give a general definition of abstraction property.
+
+\begin{definition}[Abstraction Property]
+  Given a set of constructors $C_p$, an evaluation rule $\ctr{Name}{c~\mexp_1\cdots\mexp_n}\cqq b$ is abstract for $C_p$,
+  if the set of constructors used in $b$ is a subset of $C_p$.
+\end{definition}
+
+Here, $C_p$ denotes the constructors that are premitted to appear in the body of rule.
+By default, $C_p$ consists of constructors of sort $\Val$ or $\Type$ in host language, and constructors newly defined in DSL.
 
 \subsection{Preprocessing: Lambda Lifting}
 
 We have already examplified how lambda abstractions break the abstraction property in semantics lifting.
 The solution to this problem is to expose the body of lambda abstractions in the translation rules 
  and define them as new language constructs of the DSL.
+We do this before the semantics lifting.
 For outermost lambda abstractions, the transformation is straightforward. 
 Inner lambda abstractions, on the other hand, need to be extracted recursively.
 The challenge here is to ensure that the generated translation rules are closed.
@@ -467,6 +477,10 @@ Note that the newly generated $c_n'$ needs to be processed by lambda lifting rec
 
 The correctness of lambda lifting is pretty obvious.
 For abstraction, the inner language constructs are lifted, i.e. replaced by a new DSL construct $c_n'$.
+The new generated translation rules will either not contain the lambda abstraction,
+ or the inner language constructs will be lifted recursively.
+These newly generated language constructs are added to the $C_p$,
+ and the original translation rule will obtain a rule abstract for $C_p$.
 
 \begin{theorem}
   lambda lifting maintains correctness and abstraction.
@@ -485,36 +499,40 @@ For example, the substitution rule of lambda abstraction is defined as follows:
   & λx\!:\!t.e_1 & x=y \\
   & λx\!:\!t.e_1[e_2/y] & \text{otherwise}
 \end{aligned} \right. \]
-And static application of the substitution rule to a evaluation does not result in an error:
+To address the abstraction of derivation rules that include substitution, we find it safe to statically apply substitution rules to the evaluation:
 \[ \HH{(λx\!:\!t.e_1)[e_2/y]} = \left\{ \begin{aligned}
   & \HH{λx\!:\!t.e_1} & x=y \\
   & \HH{λx\!:\!t.e_1[e_2/y]} & \text{otherwise}
 \end{aligned} \right. \]
-To describe behaviour with conditions, we simply extend our meta-language with guard (side-condition) in pattern matching.
+To describe behaviour with conditions, we simply extend our meta-language with \textit{guard} (side-condition) in pattern matching.
 For example, the above equation can be expressed as:
 \[ \HH{(λx\!:\!t.e_1)[e_2/y]} = ():\branch{
     \_ \mid x=y |> \HH{λx\!:\!t.e_1} \\&
     \_ |> \HH{λx\!:\!t.e_1[e_2/y]}} = ():\branch{
       \_ \mid x=y |> λx\!:\!t.e_1 \\&
       \_ |> λx\!:\!t.e_1[e_2/y]} \]
-where the pattern matching here is to find the satisfied condition.
-Therefore, in order to cover the substitution,
- just expand the evaluation containing substitution statically in semantics lifting.
+where the pattern matching here is just used to find a branch satisfying condition.
+% Therefore, in order to cover the substitution,
+%  expand the evaluation containing substitution statically in semantics lifting.
 %  The transformation is correct (the CLOSED requirement is important). 
-% The abstractness holds since the expressions used for substitution in application are values.
-We add the following rule to $\dd$:
-\[ \dd(\HH{(c~\mexp_1\cdots\mexp_n)[e/x]}) = ():\branch{
+% The abstraction holds since the expressions used for substitution in application are values.
+We use the following rule to replace the origin rule of evaluation with substituion in $\dd$:
+\[ \dd(\HH{(c~\mexp_1\cdots\mexp_n)[v/x]}) = ():\branch{
       \_ \mid cond_1 |> \dd(\HH{Σ(\mexp_1')}) \\&
       \cdots \\&
       \_ \mid cond_m |> \dd(\HH{Σ(\mexp_m')}) \\  
 } \]
 where the substituion rule of $c$ is:
-\[ (c~\mexp_{x_1}\cdots\mexp_{x_n})[e/x] = \left\{ \begin{aligned}
-      & \mexp_1' & cond_1 \\
+\[ (c~\mexp_{x_1}\cdots\mexp_{x_n})[v/x] = \left\{ \begin{aligned}
+      & \mexp_1' & cond_1 \text{ satisfies} \\
       & \cdots \\
-      & \mexp_m' & cond_m 
+      & \mexp_m' & cond_m \text{ satisfies}
     \end{aligned} \right. \]
 and $\mexp_i'$ is expression with substitution, $Σ(c~\mexp_{x_1}\cdots\mexp_{x_n})=c~\mexp_1\cdots\mexp_n$.
+
+We are essentially assigning substitutions to subexpressions, so that we can apply the evaluation rules of the host language as usual.
+Also, since the expressions used for substitution are values, abstraction holds.
+And correctness is guaranteed by hygiene, as will be illustrated by this example below.
 
 \begin{example}
   Consider the translation rule defined:
@@ -543,10 +561,6 @@ and $\mexp_i'$ is expression with substitution, $Σ(c~\mexp_{x_1}\cdots\mexp_{x_
         \<false> |> \HH{e_2}} \]
 \end{example}
 
-Hygienic translation guarantees correctness. 
-According to the above rules, the substitution for expressions eventually converges to the substitution for expression variables.
-Also, since the expressions used for substitution are values, abstractness holds.
-
 \begin{theorem}
   Substitution maintains correctness and abstraction.
 \end{theorem}
@@ -555,14 +569,14 @@ Also, since the expressions used for substitution are values, abstractness holds
 
 We have introduced the semantics lifting algorithm in this section.
 We find that translation rules defined with language constructs with structural evaluation rules keeps structural.
-The lambda abstraction and application, are specifically discussed so that the semantics lifting algorithm supports, and maintains abstraction.
+The lambda abstraction and application, are specifically discussed so that the semantics lifting algorithm supports these cases, and maintains abstraction.
 Thus, for a language containing structural and nonstructural parts,
  the lifting in the structural part is always safe and remains structural.
-Therefore, the abstraction is also guaranteed when we define a DSL again based on the current DSL defined by translation rules.
-For the nonstructural parts, we have a trade-off that depends on the specific problem as well as the reasonableness of the abstractness breakdown..
-Then, we achieve a vertical growth of the language: specialization by translation rules.
+Therefore, the abstraction is also guaranteed when we define a DSL again based on the current DSL structural parts. % defined by translation rules.
+For the nonstructural parts, we have a trade-off that depends on the specific problem as well as the reasonableness of the abstraction breakdown.
+% Then, we achieve a vertical growth of the language: specialization by translation rules.
 
-Now we are going to extend our algorithm slightly to enhance its usefulness. The use of these extensions is a trade-off.
+Now we are going to extend our algorithm slightly to enhance its usefulness. The use of these extensions is just a trade-off.
 These extensions may result in abstraction not being guaranteed.
 
 \paragraph{Substitution with non-value expression}

@@ -83,7 +83,7 @@ This approach seems natural. However, after further examination, we are faced wi
 For the second premise,
  on the one hand, we need to apply the evaluation rule of $\<if>$ statically for abstraction;
  on the other hand, we need to carefully consider the relationship between the scope of $x$ and sub-expressions like $e_2$ in order to prevent hygiene problem \cite{hygine}.
- Therefore, the derivation with substitution should be stated to maintain abstractness while ensuring correctness.
+ Therefore, the derivation with substitution should be stated to maintain abstraction while ensuring correctness.
 (3) When deriving rules, we recursively generate premises based on tzhe evaluation rules of language constructs.
  However, the evaluation of many language constructs, like $\<if>$, is defined by multiple rules.
  This may lead to several branches when applying rules in derivation.
@@ -93,7 +93,7 @@ To address challenge (1),
  to reveal the body of abstraction \cite{lambda-lifting}.
 To address challenge (2),
  we impose strict requirements on translation rules to avoid hygienic problems and ensure correctness,
- and show that applying substitution statically can maintain abstractness.
+ and show that applying substitution statically can maintain abstraction.
 To address challenge (3),
  we use Skeletal semantics to describe the behaviour of language constructs \cite{skeleton}.
  Each language construct has a unique rule, which facilitates derivation. % guarantees the determinism in derivation.

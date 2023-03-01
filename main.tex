@@ -112,7 +112,7 @@
 %%
 %% The "title" command has an optional parameter,
 %% allowing the author to define a "short title" to be used in page headers.
-\title{Semantics Lifting for Domain-Specific Languages}
+\title{Semantics Lifting for Domain-Specific Languages Implementation}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -141,12 +141,22 @@
 %% The abstract is a short summary of the work to be presented in the
 %% article.
 \begin{abstract}
-  A clear and well-documented \LaTeX\ document is presented as an
-  article formatted for publication by ACM in a conference proceedings
-  or journal publication. Based on the ``acmart'' document class, this
-  article presents and explains many of the common variations, as well
-  as many of the formatting elements an author may use in the
-  preparation of the documentation of their work.
+Macros and higher-order functions are pervasive techniques for implementing domain-specific languages (DSLs),
+ which can be seen as translation rules from language constructs of DSL to the host language.
+However, abstraction leakage of translation often affects the user-friendliness of the DSL.
+In this paper, we propose a semantics lifting algorithm,
+ which can derive evaluation rules of DSL constructs based on the semantics of host language and translation rules.
+We describe the semantics of host language with meta-language,
+ and generate semantics of DSL using meta-language as well.
+We formulate two properties, correctness and abstraction,
+ to illustrate that our algorithm generates correct and host-language independent evaluation rules.
+
+Based on the algorithm, we provide a generic framework to implement DSLs.
+First introduce new datatypes in the host language or support new language features via monad;
+ then define the DSL constructs in the extended host language via translation rules.
+Such DSLs are standalone, have complete semantics definition,
+ and do not depend on any host language.
+We have implemented this system named Osazone and demonstrate its usefulness with several examples.
 \end{abstract}
 
 %%
@@ -194,8 +204,8 @@
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{ref.bib}
 
-\appendix
-\input{sections/appendix}
+% \appendix
+% \input{sections/appendix}
 
 \end{document}
 \endinput
