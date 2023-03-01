@@ -74,8 +74,8 @@ The filters we have used all satisfy this assumption.
 
 Another assumption, requires that translations do not affect the success of pattern matching.
 This is a requirement for rules in the host language.
-For example, $\Let{λx\!:\!t.~\<if>~e_1~e_2~\<false>}{\HH{e}} \cdots$ is not allowed.
-Because $λx\!:\!t.~e_1~\<and>~e_2$ cannot match the above pattern.
+For example, $\Let{λx\!:\!t.\<if>~e_1~e_2~\<false>}{\HH{e}} \cdots$ is not allowed.
+Because $λx\!:\!t.e_1~\<and>~e_2$ cannot match the above pattern.
 It is natural that pattern matching should only rely on the value of evaluation and not on the structure of expression itself.
 
 \begin{assumption}\label{asm:pat-ok}
@@ -221,7 +221,7 @@ Note that here we skip the transformation of expressions containing substitution
 To illustrate the algorithm, some examples will be presented.
 Example \ref{exm:nand} defines $\<nand>$ by $\<not>$ and $\<and>$.
 Assume that the evaluation rules of $\<not>$ and $\<and>$ have been derived earlier.
-We will observe that how $\dd$ works recursively.
+We observe that how $\dd$ works recursively.
 For clarity, the parts applied by $\dd$ are underlined.
 
 \begin{example}\label{exm:nand}
@@ -254,14 +254,14 @@ Simplification is sometimes useful for abstraction property, for instance in thi
 % In \todo{}, we will discuss substituion more deeply.
 
 \begin{example}
-  $\<let>~x:t=e_1~\<in>~e_2 => (λx:t.e_2)~e_1$:
+  $\<let>~x:t=e_1~\<in>~e_2 => (λx\!:\!t.e_2)~e_1$:
   \begin{align*}
        & \ctr{Let}{\<let>~x:t=e_1~\<in>~e_2} \\
-    =~ & \dhl{\HH{(λx:t.e_2)~e_1}}  \\
-    =~ & \dhl{\Let{λx':t'.e}{\HH{λx:t.e_2}} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']}} \\
-    =~ & \Let{λx':t'.e}{\dhl{\HH{λx:t.e_2}}} \dhl{\Let{v_1}{\HH{e_1}} \EE{e[v_1/x']}} \\
-    =~ & \Let{λx':t'.e}{λx:t.e_2} \Let{v_1}{\dhl{\HH{e_1}}} \dhl{\HH{e[v_1/x']}} \\
-    =~ & \Let{λx':t'.e}{λx:t.e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
+    =~ & \dhl{\HH{(λx\!:\!t.e_2)~e_1}}  \\
+    =~ & \dhl{\Let{λx':t'.e}{\HH{λx\!:\!t.e_2}} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']}} \\
+    =~ & \Let{λx':t'.e}{\dhl{\HH{λx\!:\!t.e_2}}} \dhl{\Let{v_1}{\HH{e_1}} \EE{e[v_1/x']}} \\
+    =~ & \Let{λx':t'.e}{λx\!:\!t.e_2} \Let{v_1}{\dhl{\HH{e_1}}} \dhl{\HH{e[v_1/x']}} \\
+    =~ & \Let{λx':t'.e}{λx\!:\!t.e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
     =~ & \Let{x'}{x} \Let{t'}{t} \Let{e}{e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
     =~ & \Let{v_1}{\HH{e_1}} \HH{e_2[v_1/x]}
   \end{align*}
@@ -278,7 +278,7 @@ We expect the rule to have the following properties:
   \item Abstraction: any constructor used in evaluation rule of $c_n$ is either a constructor of values,
          or a DSL constructor.
 \end{itemize}
-In this section, we will presents these properties formally.
+% In this section, we will presents these properties formally.
 
 \subsubsection{Correctness}
 We use subscripts to distinguish between in which language the computation is performed.
@@ -304,7 +304,7 @@ The complete proof can be found in appendix.
   \[ \cb \rr{X} v \quad\miff\quad \dd(\cb) \rr{X} v. \]
 \end{lemma}
 
-Before the proof of correctness, we will give a stronger lemma,
+Before the proof of correctness, we give a stronger lemma,
  of which correctness theorem is an special case.
 
 \begin{lemma}\label{lemma:b-db}
@@ -440,9 +440,9 @@ Fortunately, lambda lifting can help us.
 Formally, for the translation rule $tr$ which defines $c_n'$:
 \newcommand{\laml}[1]{\uparrow_λ\!\!(#1)}
 \begin{align*}
-  \laml{(λx:t.e_1)~e_2} & = (λx:t.\laml{e_1})~\laml{e_2} \label{ll:let} \\
-  \laml{λx:t.e} & = λx:t.e \qquad \text{if $e$ is a variable or expression variable} \\
-  \laml{λx:t.e} & = λx:t.(c_n'~\mexp_1..\mexp_p ~ x_1..x_q) \\[-3pt]
+  \laml{(λx\!:\!t.e_1)~e_2} & = (λx\!:\!t.\laml{e_1})~\laml{e_2} \label{ll:let} \\
+  \laml{λx\!:\!t.e} & = λx\!:\!t.e \qquad \text{if $e$ is a variable or expression variable} \\
+  \laml{λx\!:\!t.e} & = λx\!:\!t.(c_n'~\mexp_1..\mexp_p ~ x_1..x_q) \\[-3pt]
     & \text{generating } c_n'~\mexp_1..\mexp_p ~ e_1..e_q => \laml{e[e_1/x_1..e_q/x_q]} \\[-3pt]
     & \text{for each expression variable } \mexp_i \text{ in } e \text{ and variable } x_j \text{ not bound in } e \\
   \laml{c~\mexp_1\cdots \mexp_n} & = c~\laml{\mexp_1}\cdots\laml{\mexp_n} \\
@@ -481,22 +481,22 @@ As mentioned earlier, we need to specify substitution rules for each language co
 Except for variable, the substituion rules are all structural.
 Some language constructs involving scopes need to check the variable name during substitution.
 For example, the substitution rule of lambda abstraction is defined as follows:
-\[ (λx:t.~e_1)[e_2/y] = \left\{ \begin{aligned}
-  & λx:t.~e_1 & x=y \\
-  & λx:t.~e_1[e_2/y] & \text{otherwise}
+\[ (λx\!:\!t.e_1)[e_2/y] = \left\{ \begin{aligned}
+  & λx\!:\!t.e_1 & x=y \\
+  & λx\!:\!t.e_1[e_2/y] & \text{otherwise}
 \end{aligned} \right. \]
 And static application of the substitution rule to a evaluation does not result in an error:
-\[ \HH{(λx:t.~e_1)[e_2/y]} = \left\{ \begin{aligned}
-  & \HH{λx:t.~e_1} & x=y \\
-  & \HH{λx:t.~e_1[e_2/y]} & \text{otherwise}
+\[ \HH{(λx\!:\!t.e_1)[e_2/y]} = \left\{ \begin{aligned}
+  & \HH{λx\!:\!t.e_1} & x=y \\
+  & \HH{λx\!:\!t.e_1[e_2/y]} & \text{otherwise}
 \end{aligned} \right. \]
 To describe behaviour with conditions, we simply extend our meta-language with guard (side-condition) in pattern matching.
 For example, the above equation can be expressed as:
-\[ \HH{(λx\!:\!t.~e_1)[e_2/y]} = ():\branch{
-    \_ \mid x=y |> \HH{λx\!:\!t.~e_1} \\&
-    \_ |> \HH{λx\!:\!t.~e_1[e_2/y]}} = ():\branch{
-      \_ \mid x=y |> λx\!:\!t.~e_1 \\&
-      \_ |> λx\!:\!t.~e_1[e_2/y]} \]
+\[ \HH{(λx\!:\!t.e_1)[e_2/y]} = ():\branch{
+    \_ \mid x=y |> \HH{λx\!:\!t.e_1} \\&
+    \_ |> \HH{λx\!:\!t.e_1[e_2/y]}} = ():\branch{
+      \_ \mid x=y |> λx\!:\!t.e_1 \\&
+      \_ |> λx\!:\!t.e_1[e_2/y]} \]
 where the pattern matching here is to find the satisfied condition.
 Therefore, in order to cover the substitution,
  just expand the evaluation containing substitution statically in semantics lifting.

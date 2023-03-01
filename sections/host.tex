@@ -142,7 +142,7 @@ The evaluation rules of \STLC{} are defined in Fig. \ref{fig:stlc} whose output 
       \<true>  |> \HH{e_2} \\&
       \<false> |> \HH{e_3}
     } \\
-    \ctr{Abs}{λx\!:\!t.~e} & \cqq λx\!:\!t.~e \\
+    \ctr{Abs}{λx\!:\!t.e} & \cqq λx\!:\!t.e \\
     \ctr{App}{e_1~e_2} & \cqq \lt~λx\!:\!t.e=\HH{e_1};~\lt~v_2=\HH{e_2};~\HH{e[v_2/x]}
   \end{align*}
   \caption{Evaluation Rules of \STLC}
@@ -173,7 +173,7 @@ The semantics of meta-language can be defined by the relation $\cb \rr{X} \mexp$
 $X$ is a label, to describe transformation of global state, related to monad $m$.
 For example, let $m$ be $\mathit{State~Store}$. 
 Then $X=\langle σ,σ'\rangle$, where $σ$ is the current store, and $σ'$ is the updated store.
-We will abbreviate $\cb \rr{X} \mexp$ to $\cb \lr \mexp$ if $X$ is identity morphism, i.e., $σ=σ'$.
+We abbreviate $\cb \rr{X} \mexp$ to $\cb \lr \mexp$ if $X$ is identity morphism, i.e., $σ=σ'$.
 Label composition $X_1;X_2$ is used to compose the labels of computation of sub-bones.
 We require that $X_1$ and $X_2$ are composable: if $X_1=\langle σ,σ'\rangle$ and $X_2=\langle σ',σ''\rangle$,
 then $X_1;X_2=\langle σ,σ''\rangle$. 
@@ -224,8 +224,8 @@ We rewrite these rules with nonstructural parts underlined:
 % \newcommand{\wkalt}[1]{\colorbox{lightgray}{#1}}
 \newcommand{\wkalt}[1]{\textcolor{magenta}{#1}}
 \begin{align*}
-  \ctr{Abs}{λx:t.~e} & \cqq λx:t.~\underline{e} \\
-  \ctr{App}{e_1~e_2} & \cqq \Let{λx:t.e}{\HH{e_1}} \Let{v_2}{\HH{e_2}} \HH{\underline{e[v_2/x]}}.
+  \ctr{Abs}{λx\!:\!t.e} & \cqq λx\!:\!t.\underline{e} \\
+  \ctr{App}{e_1~e_2} & \cqq \Let{λx\!:\!t.e}{\HH{e_1}} \Let{v_2}{\HH{e_2}} \HH{\underline{e[v_2/x]}}.
 \end{align*}
 
 \begin{definition}[Structural Evaluation Rule]\label{def:str}

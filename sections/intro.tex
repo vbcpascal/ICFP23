@@ -37,7 +37,7 @@ The lifted semantics can give the user a better aid in diagnosis when the DSL pr
 It is possible to know, for example, which subexpression causes the error.
 We adapt the core ideas of typing rules derivation to semantics lifting.
 For example, in a host language with lambda abstraction and application, we can define $\<let>$ by a simple transformation:
-\[ \<let>~x:t=e_1~\<in>~e_2 => (λx:t.e_2)~e_1 \]
+\[ \<let>~x:t=e_1~\<in>~e_2 => (λx\!:\!t.e_2)~e_1 \]
 The evaluation rule derivation of $\<let>$ is given in Fig. \ref{fig:let}.
 An expression with $\<let>$ evaluates to $v$ in DSL,
  iff the translated expression evaluates to $v$ in host language (Step 1).
@@ -58,11 +58,11 @@ And the abstraction property holds in the $\<let>$ case.
     \inference[(Step 1) ]{%
       \inference[(Step 2) ]{%
         \inference[(Step 3)]{}{%
-          λx:t.e_2 \Da λx:t.e_2}
+          λx\!:\!t.e_2 \Da λx\!:\!t.e_2}
         & e_1 \Da v_1
         & e_2[v_1/x] \Da v
       }
-      {(λx:t.e_2)~e_1 \Da v}
+      {(λx\!:\!t.e_2)~e_1 \Da v}
     }
     {\<let>~x:t=e_1~\<in>~e_2 \Da v}
   \]

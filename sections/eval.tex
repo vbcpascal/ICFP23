@@ -45,7 +45,7 @@ In this example, We will talk about how to access ``global variables'' in the tr
 Fixpoint is a common approach to implement recursion in functional programming language.
 As a primitive language construct, the evaluation rule and typing rule of $\<fix>$ are specified:
 \begin{align*}
-  \ctr{Fix}{ \<fix>~e} & \cqq \Let{λx:t.e_1}{\EE{e}} \EE{e_1[\<fix>~(λx:t.e_1)/x]}
+  \ctr{Fix}{ \<fix>~e} & \cqq \Let{λx\!:\!t.e_1}{\EE{e}} \EE{e_1[\<fix>~(λx\!:\!t.e_1)/x]}
   % \TT{\<fix>~e} & \cqq \TT{e}:(t_1->t_2\mid t_1=t_2 |> t_1). 
 \end{align*}
 
@@ -57,7 +57,7 @@ In fact, thanks to lambda lifting and the existing discussion on substitution, f
 However, unfolding according to the rules of $\<fix>$ leads to non-termination of the algorithm.
 We assume that fix can be preserved in the DSL--for a language that contains recursion is straightforward.
 We add the following rule to the $\dd$:
-\[ \dd(\HH{\<fix>~\mexp}) = \Let{λx\!:\!t.e_1}{\dd(\HH{\mexp})} \HH{\<fix>~(λx:t.e_1)} \]
+\[ \dd(\HH{\<fix>~\mexp}) = \Let{λx\!:\!t.e_1}{\dd(\HH{\mexp})} \HH{\<fix>~(λx\!:\!t.e_1)} \]
 where we do not expand the substitution with fixpoint resursively.
 The above rule is equivalent to the extended rule in Section \ref{sec:alg-ex}, but the $\<fix>$ is kept in the rules for readability.
 

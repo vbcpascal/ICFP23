@@ -107,12 +107,12 @@ Also thanks to uniqueness of translation rules,
 \paragraph{Lambda Lifting.}
 As mentioned above, a language construct maybe be defined as a lambda abstraction in the translation rule.
 For example, we can define $\<andf>$ by the following translation rule:
-\[ \<andf> => λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false> \]
+\[ \<andf> => λx\!:\!\<bool>.λy:\<bool>.\<if>~x~y~\<false> \]
 The above method will result in a rule which breaks abstraction:
 \begin{align*}
   \ctr{AndF}{\<andf>} 
-    & \cqq \EE{λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>} \\
-    & = λx:\<bool>.~λy:\<bool>.~\<if>~x~y~\<false>, 
+    & \cqq \EE{λx\!:\!\<bool>.λy:\<bool>.\<if>~x~y~\<false>} \\
+    & = λx\!:\!\<bool>.λy:\<bool>.\<if>~x~y~\<false>, 
 \end{align*}
 But by converting $\<andf>$ to $\<and>$, the internal computation can be exposed.
 The approach of exposing parameters of the lambda abstraction in RHS,
@@ -120,12 +120,12 @@ The approach of exposing parameters of the lambda abstraction in RHS,
 In the above example, $\<andf>$ will be transformed into the following two rules:
 \begin{align*}
   \mathit{and_f'}~e_1~e_2 & => \<if>~e_1~e_2~\<false> \\ 
-  \<andf> & => λx:\<bool>.~λy:\<bool>.~\mathit{and_f'}~x~y.
+  \<andf> & => λx\!:\!\<bool>.λy:\<bool>.\mathit{and_f'}~x~y.
 \end{align*}
 By thinking of $\mathit{andf'}$ as a DSL construct and further deriving evaluation rule for $\mathit{andf'}$,
  the abstraction property of $\<andf>$ is satisfied.
 The derived evaluation rule of $\<andf>$ is defined as follows:
-\[ \ctr{AndF}{\<andf>} \cqq λx:\<bool>.~λy:\<bool>.~\mathit{and_f'}~x~y \]
+\[ \ctr{AndF}{\<andf>} \cqq λx\!:\!\<bool>.λy:\<bool>.\mathit{and_f'}~x~y \]
 Lambda lifting plays an important role in translation rules with nested lambda abstractions on the RHS.
 
 \subsection{Extend the host language}
