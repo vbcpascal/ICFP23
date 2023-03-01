@@ -53,7 +53,7 @@ Since an expression with substituion are evaluated,
  the evaluation rule is not structural.
 And as mentioned above, nonstructural evaluation rule should be considered how to maintain abstraction.
 
-In fact, thanks to lambda exposure and the existing discussion on substitution, fixpoint is easy to solve.
+In fact, thanks to lambda lifting and the existing discussion on substitution, fixpoint is easy to solve.
 However, unfolding according to the rules of $\<fix>$ leads to non-termination of the algorithm.
 We assume that fix can be preserved in the DSL--for a language that contains recursion is straightforward.
 We add the following rule to the $\dd$:
@@ -64,7 +64,7 @@ The above rule is equivalent to the extended rule in Section \ref{sec:alg-ex}, b
 \begin{example}
 \[ \<iseven> => \<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<if>~(x=lit~0)~\<true>~(\<if>~(x=lit~1)~\<false>~(ie~(x-lit~2)))) \]
   
-The first step is lambda exposure. The following translation rules are generated.
+The first step is lambda lifting. The following translation rules are generated.
 \begin{align*}
   \<iseven>'~e_1~e_2 & => \<if>~(e_2=lit~0)~\<true>~(\<if>~(e_2=lit~1)~\<false>~(e_1~(e_2-lit~2))) \\
   \<iseven> & => \<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x)
@@ -79,7 +79,7 @@ The evaluation rule of $\<iseven>$ can be derived by:
   =~ & \Let{λx'\!:\!t.e}{\dhl{\HH{λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x}}} \HH{\<fix>~(λx':t.e)} \\
   =~ & \HH{\<fix>~(λie\!:\!int->bool.~λx\!:\!int.~\<iseven>'~ie~x)}
 \end{align*}
-Because of lambda exposure, $\<iseven>'$ is a DSL construct. The abstraction property holds.
+Because of lambda lifting, $\<iseven>'$ is a DSL construct. The abstraction property holds.
 \end{example}
 
 

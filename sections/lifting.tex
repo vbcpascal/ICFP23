@@ -244,7 +244,7 @@ We pick up the $\<let>$ defined in introduction as the second example.
 % The language construct $\<let>$ is a common syntactic sugar, defined by lambda abstraction and application.
 % Considering $\<let>$ as a translation rule, 
 Example \ref{exm:let} presents the derivation of its evaluation rule.
-% Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda exposure.
+% Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda lifting.
 The last step is simplification, since that both left and right sides are constructed by $λ$.
 Simplification is sometimes useful for abstraction property, for instance in this example,
  where the evaluation rule of $\<let>$ no longer depends on lambda abstraction (even if this is allowed).
@@ -443,7 +443,7 @@ A structural derived rule always satisfies the abstraction property.
 Strong abstraction property futher illustrates the importance of structural evaluation rules.
 In STLC, however, we need to work with nonstructural language constructs: lambda abstraction and application.
 
-\subsection{Preprocessing: Lambda Exposure}
+\subsection{Preprocessing: Lambda Lifting}
 
 We have already exemplified how lambda abstractions break the abstraction property in semantics lifting.
 The solution to this problem is to expose the lambda abstractions in the translation rules 
@@ -451,7 +451,7 @@ The solution to this problem is to expose the lambda abstractions in the transla
 For the outermost lambda abstractions, the transformation is straightforward. 
 The inner lambda abstractions, on the other hand, need to be extracted recursively.
 The challenge here is to ensure that the translation rules are closed.
-Fortunately, lambda exposure can help us.
+Fortunately, lambda lifting can help us.
 Formally, for the translation rule $tr$ which defines $c_n'$:
 \newcommand{\laml}[1]{\uparrow_λ\!\!(#1)}
 \begin{align}
@@ -463,33 +463,33 @@ Formally, for the translation rule $tr$ which defines $c_n'$:
   \laml{\mexp_x} & = \mexp_x \\
   \laml{\mexp_b} & = \mexp_b
 \end{align}
-where $\laml{\bullet}$ is lambda exposure transformation, with the generation of some translation rules.
+where $\laml{\bullet}$ is lambda lifting transformation, with the generation of some translation rules.
 The first rule states that if a lambda abstraction is applied directly in the translation rule, 
  then it does not need to be lifted because it does not break the abstraction (which can essentially be written as a $\<let>$).
 The second is the main rule, which generates a new constructor $c_n'$ to describe the semantics of a lambda abstraction.
 Any expression variables of $LHS(tr)$ used in $e$ (i.e., parameters of $c_n$) need to be applied by $c_n'$.
 In addition, any variable $x_j$ which have been bound and captured by $e$ are also required to be included,
  by an new expression variable $e_j$, which ensures the closure of translation rules.
-Note that the newly generated $c_n'$ needs to process lambda exposure recursively,
+Note that the newly generated $c_n'$ needs to process lambda lifting recursively,
  and may generate some more translation rules.
-The lambda exposure is pretty like the lambda lifting for inner abstractions \cite{lambda-lifting}.
+The lambda lifting is pretty like the lambda lifting for inner abstractions \cite{lambda-lifting}.
 
 % The following lemma clearly holds.
 
 \begin{lemma}
-  Lambda exposure preserves requirements \ref{req:no-recursion} and \ref{req:close}.
+  Lambda lifting preserves requirements \ref{req:no-recursion} and \ref{req:close}.
 \end{lemma}
 
-The correctness of lambda exposure is pretty obvious.
+The correctness of lambda lifting is pretty obvious.
 For abstractness, all generated translation rules either have no lambda abstraction or the lambda abstraction is lifted, i.e. replaced by a new DSL construct $c_n'$.
 If a translation rule has no lambda abstractions, its evaluation rule can be derived as usual.
 Otherwise, the part breaking abstraction has been replaced by the DSL constructs.
 
 \begin{theorem}
-  Lambda exposure maintains correctness and abstraction.
+  Lambda lifting maintains correctness and abstraction.
 \end{theorem}
 
-In addition, Lambda exposure is applicable to any language construct that produces delayed evaluations.
+In addition, Lambda lifting is applicable to any language construct that produces delayed evaluations.
 
 \subsection{Substitution}
 
