@@ -36,7 +36,7 @@ $\mathit{newLoc}$ and $\<store>$ are filters, representing the primitive operati
 We assume that any user understands these filters.
 The filter $\mathit{newLoc}$ is used to allocate a new cell in storage,
  and the result is bound to $l$, whose sort is a base sort $\mathit{Location}$.
-$\<store>$ puts the value $v$ into the location $l$ and always returns a unit $()$.
+Meta-function $\<store>$ puts the value $v$ into the location $l$ and always returns a unit $()$.
 Instead of binding it to a variable, we check the result directly by pattern matching.
 The last bone stands for the return value of this rule,
  where $loc$ is a constructor that constructs the location $l$ as an $\Val$.\footnote{Both pattern matching and results with constructors in skeleton need to be implemented via filter.
@@ -56,7 +56,7 @@ In Haskell, this rule can be translated as:
     () \leftarrow store~l~v;
     return~(loc\ l) \}} \]
 
-\subsection{Expressions}
+\subsection{Expressions in Meta-Language}
 Various \textit{expressions} in the meta-language are used to encode the language constructs in the language defined.
 An expression $\mexp$ is built by \textit{base expressions}, like literals and identifiers, ranged over by $\mexp_b$;
  \textit{expression variables}, ranged over by $\mexp_x$;
@@ -85,7 +85,7 @@ Substitution is a special meta-language operation.
 % Currently, we require the users to explicitly define the substitution rules.
 An expression containing a substitution is also an expression and is only used in hooks.
 
-\subsection{Rules of Meta-Language}
+\subsection{Rules in Meta-Language}
 
 A rule describes the behaviour of a language construct.
 A rule in meta-language has the shape $\ctr{Name}{c~\mexp_{x_1}\cdots \mexp_{x_n}} \cqq b$, 
@@ -240,8 +240,8 @@ and $\mexp_{x_i}$ is only used in hook.
 % \end{itemize}
 \end{definition}
 
-The above definition can be formalized as $strl$, whose input in the set of expression variables and a bone, and the output is whether the bone is structural. 
-Structural evaluation rules are the key to ensure the abstraction in semantics lifting.
+The above definition can be formalized as $strl$, a function whose input in the set of expression variables and a bone, and the output is whether the bone is structural. 
+ Structural evaluation rules are the key to ensure the abstraction in semantics lifting.
 In other words, any language construct with nonstructural evaluation rule needs to be carefully accounted for in terms of how it affects the semantics lifting.
 % The typing rules, fortunately, are all structural in \STLC.
 

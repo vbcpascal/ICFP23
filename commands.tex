@@ -2,9 +2,15 @@
 \newcommand{\mycomment}[2]{{\small\color{magenta}\underline{\sf{#1}}:} {\color{magenta}{\small #2}}}
 \newcommand{\todo}[1]{\mycomment{Todo}{#1}}
 \newcommand{\gcmt}[1]{\mycomment{Guan}{#1}}
+\newcommand{\diw}[1]{\textcolor{blue}{DW: #1}}
+% \newcommand{\diwchanged}[1]{\textcolor{cyan}{#1}}
+\newcommand{\diwchanged}[1]{#1}
+\newcommand{\appdiwchanged}[1]{#1}
+\newcommand{\diwnew}[1]{{\color{green}\emph{#1}}}
 
 % Shorthand
 \newcommand{\Da}{\Downarrow}
+\newcommand{\apd}{+\!\!\!+}
 
 % Unicode char
 \usepackage{newunicodechar}
@@ -18,18 +24,32 @@
 \mathchardef\mhyphen="2D
 \usepackage[inference,ligature,reserved,shorthand]{semantic}
 \reservestyle[\mathinner]{\command}{\mathit}
-\command{let, in, iseven, store}
-\command{true, false, bool, int, unit}
+\command{plus, iszero}
+\command{true, false, if, then, else}
+\command{let, in}
+\command{inl, inr}
+\command{case, of}
+\command{nil, cons, head, tail, isnil, body}
+
+\command{alloc, fetch, store}
+
+\command{iseven, store}
+\command{bool, int, unit}
 \command{pair, fst, snd, as}
 \command{and, or, not, nand, nor, xor, for}
-\command{if, then, else, while, print, fix, ref, var, when, do, end, robot, whereAmI, left, right, up, down}
+\command{while, print, fix, ref, var, when, do, end, robot, whereAmI, left, right, up, down}
 \command{andf[and_f], andfp[and_f']}
 \command{halfa[half\mhyphen adder], fulla[full\mhyphen adder], Rf[Ref]}
+
+\reservestyle{\kword}{\texttt}
+\kword{automata, input, exec, enda[end]}
+
 
 \reservestyle{\Constructor}{\textsc}
 \Constructor{Bool, True, False}
 \Constructor{Int, Lit, Plus, Eq, Lt}
 \Constructor{Abs, App, Loc, Ref}
+
 
 % Macro for Osazone semantics
 \NewDocumentCommand{\branch}{ >{\SplitList{&}} m }{%
@@ -41,6 +61,23 @@
 \NewDocumentCommand{\brfunc}{m}{%
   & #1%
 }
+
+\newcommand{\given}{\,\middle\vert\,}
+
+\newcommand{\DS}[1]{\mathbb{D}(#1)} % Totally desugar
+\newcommand{\ds}[1]{d^{*}(#1)} % Statically totally derivation
+
+\newcommand{\Dad}{\underset{\text{DSL}}{\Da}} % DSL downarrow
+\newcommand{\Dah}{\underset{\text{Host}}{\Da}} % Host downarrow
+
+% Languages
+% \newcommand{\LamBool}{$\lambda_{\textsc{Bool}}$}
+\newcommand{\LamBool}{\textsc{Stlc}}
+\newcommand{\STLC}{\textsc{Stlc}}
+\newcommand{\Func}{\textsc{Func}}
+\newcommand{\STLCex}{\textsc{Stlc}$_\text{ex}$}
+\newcommand{\Cminor}{\textsc{Cminor}}
+
 
 \newcommand{\lt}{\mathbf{let}}
 \newcommand{\monad}{\mathbf{monad}~}
@@ -70,8 +107,7 @@
 \mathlig{|>}{\triangleright}
 
 \newcommand{\lifted}[1]{#1^\uparrow}
-\newcommand{\ds}[1]{\mathbb{D}_1(#1)}
-\newcommand{\DS}[1]{\mathbb{D}(#1)}
+% \newcommand{\ds}[1]{\mathbb{D}_1(#1)}
 \newcommand{\DB}[1]{\mathbb{D}_b(#1)}
 \newcommand{\dd}{\delta}
 \newcommand{\dhl}[1]{\underline{\dd(#1)}}
@@ -81,6 +117,9 @@
 \newtheorem{requirement}[theorem]{Requirement}
 \newtheorem{assumption}[theorem]{Assumption}
 \newtheorem*{lemmaapp}{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{goal}{Goal}
 }
 
 \newcommand{\mE}{\mathcal{E}}
@@ -91,8 +130,6 @@
 \newcommand{\ce}{\widetilde{e}}
 \newcommand{\cb}{\widetilde{b}}
 
-\newcommand{\STLC}{\textsc{Stlc}}
-\newcommand{\STLCex}{\textsc{Stlc}$_\text{ex}$}
 \newcommand{\RefIO}{\textsc{Ref}$_\text{IO}$}
 
 \newcommand{\lr}{\rr{\phantom{E}}}  % ------>

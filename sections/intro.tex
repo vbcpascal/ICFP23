@@ -1,152 +1,110 @@
 \section{Introduction}
+\label{sec:intro}
 
-Language-oriented programming (LOP) \cite{LOP} features solving a class of problems by creating new domain-specific languages (DSLs).
-To avoid reimplementing common language constructs such as loops and branches,
-developers tend to implement DSLs based on another general-purpose programming language (called \textit{host language}).
-Developers can define a DSL using language features supported by the host language, rendering programs with domain-specific forms.
-Languages with features like macros and higher-order functions are frequently employed as host languages\cite{macro-dsl,macro-dsl-2}.
-These features can be treated as methods to implement translations from DSLs to the host language.
-By specifying these translation rules, developers can obtain DSL interpreters for free.
-This type of DSLs is called embedded DSL (eDSL).
+Language-oriented programming (LOP) \cite{LOP} involves solving a specific class of problems by creating new domain-specific languages (DSLs). To avoid re-implementing common language constructs such as loops and branches, developers usually implement DSLs on top of another general-purpose programming language, which is usually called the \textit{host language}. Developers can define a DSL using language features supported by the host language, such that the DSL programs are specialized programs with domain-specific syntactic forms. Languages that have features such as macros and higher-order functions are commonly used as host languages \cite{macro-dsl, macro-dsl-2}. These features provide methods to implement the translation from DSLs to the host language. By specifying rules of the translation, developers can obtain DSL interpreters for free. DSLs implemented in this way are often called \emph{embedded DSLs} (EDSLs).
 
-Despite eDSL can significantly reduce implementation efforts, DSL users find it inconvenient because of the inevitable need to learn host language concepts and understand error messages.
-This is a type of \textit{abstraction leakage} \cite{Abstraction}:
- the user writes a DSL program which will be translated into the host language,
- causing the executed program is pretty differently from the original program.
-It is difficult to access DSL-level information after translation.
+EDSLs have the potential to significantly reduce implementation efforts. However, their convenience is hindered by the requirement for users to understand host-level language concepts and possible error messages. This is a type of \textit{abstraction leakage} \cite{Abstraction}: programs that the user writes must be translated into the host language before executing, thus the \emph{abstraction boundary} is not preserved and it is difficult to retrieve DSL-level information during the execution.
 
-Pombrio et al. have made great progress in the maintenance of abstraction automatically for syntactic sugars.
-They proposed \textit{resugaring} \cite{resugar}, by selectively reorganizing the sequence of evaluations on the host language to the DSL according to the reverse translation rules.
-% In particular, a DSL program is translated into host language first.
-% Then, each term in the evaluation sequence of the host language is checked if it can be reconstructed into the DSL constructs dynamically.
-However, when the translated program causes an error in the host language,
- the abstraction is still leaked because of the error message,
-% However, errors still appear in the host language. %, which cannot be lifted to DSL.
- or DSL users can only observe that the evaluation sequence is stuck, but do not know where the error happens.
-Type lifting \cite{infer-types} is another work on maintaining abstraction.
-Typing rules for newly-defined language constructs are inferred statically according to the syntactic sugar definitions and the typing rules of the host language.
-Then, these inferred typing rules of DSL can guide DSL users, and for example, can be used for static analysis in IDEs.
-% and facilitates the generation of high-quality DSL error messages.
+Pombrio et al. have made significant contributions to the preservation of the abstraction boundary that a DSL aims to establish.
+% \diwchanged{
+Their approach considers DSLs implemented using syntactic sugars (i.e., language constructs defined by translation to the host language) and achieves this objective by recovering evaluation traces in the core language to traces in the DSL, 
+% }
+through a process called \emph{resugaring} \cite{resugar}. The resugaring process selectively reorganizes the sequence of evaluations in the host language to the DSL according to the reverse translation rules, thereby maintaining the abstraction boundary \textit{dynamically}. It is noteworthy, however, that errors during the host language execution can still lead to abstraction leakage during the evaluation. Specifically, error messages may not be translatable back to the DSL level. As a consequence, DSL users may observe that the evaluation is stuck but cannot pinpoint the location of the error.
 
-Inspired by these work, we expect to lift the semantics of DSL, to overcome drawbacks of resugaring.
-The DSL developers only need to provide the translation rules from the DSL to the host language.
-We then automatically derive evaluation rules of the DSL constructs based on the semantics of the host language and the translation rules.
-We call this \textit{semantics lifting}.
-% In other words, for a DSL construct defined by a translation rule, we would like to \textit{derive its evaluation rule}.
-The lifted semantics can give the user a better aid in diagnosis when the DSL program is stuck.
-It is possible to know, for example, which subexpression causes the error.
-We adapt the core ideas of typing rules derivation to semantics lifting.
-For example, in a host language with lambda abstraction and application, we can define $\<let>$ by a simple transformation:
-\[ \<let>~x:t=e_1~\<in>~e_2 => (λx\!:\!t.e_2)~e_1 \]
-The evaluation rule derivation of $\<let>$ is given in Fig. \ref{fig:let}.
-An expression with $\<let>$ evaluates to $v$ in DSL,
- iff the translated expression evaluates to $v$ in host language (Step 1).
-Based on the evaluation rule of application, we can expand the premise (Step 2).
-A lambda abstraction is always a value, with no premises (Step 3). 
-% And the evaluation rule of lambda abstraction can be applied.
-Hence, we can obtain the following evaluation rule for $\<let>$:
+One interesting step towards resolving this problem is the technique called \emph{type lifting} \cite{infer-types}, which aims to maintain abstraction boundaries during type checking. This technique \textit{statically} infers typing rules for newly-defined language constructs based on the typing rules of the host language and simple syntactic-sugar definitions. The inferred typing rules of a DSL can be used for static analysis in Integrated Development Environments (IDE), ultimately facilitating the generation of high-quality compile-time error messages for DSLs.
+
+Inspired by the idea of type lifting, we shall propose a new technique, called \textit{semantics lifting}, which aims to derive the semantics of a domain-specific language statically to overcome the limitations of resugaring. Using our technique, DSL developers only need to provide the translation rules from the DSL to the host language and then they obtain self-contained evaluation rules \appdiwchanged{of a lifted semantics} for the DSL for free! Our major desideratum is to preserve the abstraction boundary of the DSL, i.e., the evaluation of a program in DSL does not reveal details related to the host language to the user. This lifted semantics can assist users in diagnosing run-time errors in their DSL programs, because all evaluation steps are defined over the DSL \appdiwchanged{constructs} only and thus \appdiwchanged{users can} identify the sub-expression that causes the error.
+
+As a matter of fact, it is possible but not easy to adapt the core ideas of the type-lifting algorithm for semantics lifting.
+For instance, with a host language including lambda abstraction and application, we can define a new language construct $\<let>$ by the following translation rule (or sometimes called desugaring rule):
+\[ \<let>~x=e_1~\<in>~e_2 ->_d  (λx.~e_2)~e_1. \]
+%where we use $->_d$ to denote the transformation.
+Following the lifting algorithm for types, we can obtain the derivation of the evaluation rule for $\<let>$ as shown in Fig. \ref{fig:let}.
+First, a $\<let>$ expression is evaluated to a value $v$ in DSL if the translated expression is evaluated to $v$ in the host language (Step 1).
+Then, by the evaluation rule of application in the host, we expand the premise (Step 2).
+Finally, since a lambda abstraction is already a value with no premises (Step 3),
+we can therefore obtain the following evaluation rule for $\<let>$:
 \[
-  \inference{e_1 \Da v_1 & e_2[v_1/x] \Da v}{\<let>~x:t=e_1~\<in>~e_2 \Da v}
+  \inference{e_1 \Da v_1 & [x\mapsto v_1]e_2 \Da v}{\<let>~x=e_1~\<in>~e_2 \Da v}
 \]
-Note that without lambda abstraction and application appearing in the premises,
- the evaluation rule of $\<let>$ is described directly, without referring to host language constructs.
-We define the \textit{abstraction} property: evaluation rules of a DSL should be independent of the host language.
-And the abstraction property holds in the $\<let>$ case.
+It is important to note that this evaluation rule of $\<let>$ is described without any use of lambda abstraction and application, two host language constructs used for defining  $\<let>$.
+
+%We can define the expected \textit{abstraction} property intuitively as follows: the evaluation sequence of a DSL program should be independent of the host language. 
+%Through this method, the language constructs of the DSL is inevitably required to use values in the host language. 
+%For example, it is reasonable to treat integers and Boolean values of the host as values of the DSL.
+%Therefore, we allow evaluation sequences in the program running on the DSL to use such values.
+% \todo{justifications: We allow the values of the host language to be used in the evaluation rules of the DSL.}
+%In the later part of this paper, the unexpected host language constructs do not contain these values.
+
+%We can transform this global and dynamic abstraction property of evaluation sequences into a local and static abstraction property of the lifted evaluation rules of DSL language constructs: 
+%there is no host language constructs used in the evaluation rules of DSL language constructs.
+% \todo{describe local abstraction property.} 
+%It is easy to show that the local abstraction property holds in the $\<let>$ case.
+%Due to the fact that we define the language constructs of our DSL using translation rules, 
+%incorporating the syntax and evaluation rules of these language constructs into the host language results in a mixed language.
+%By selecting a closed subset of this mixed language, which includes the DSL language constructs and a portion of the host language constructs, we obtain the DSL.
+%Due to the guarantee of local abstraction, it is no longer necessary to introduce host language constructs when selecting the constructs for the DSL.
+%Or in other words, we can safely remove certain host language constructs from the mixed language.
+%In the subsequent discussion, we consider the mixed language directly as the DSL, without taking into account the step of selecting the subset.
+
 
 \begin{figure}[t!]
   \[
     \inference[(Step 1) ]{%
       \inference[(Step 2) ]{%
         \inference[(Step 3)]{}{%
-          λx\!:\!t.e_2 \Da λx\!:\!t.e_2}
+          λx.e_2 \Da λx.e_2}
         & e_1 \Da v_1
-        & e_2[v_1/x] \Da v
+        & [x\mapsto v_1]e_2 \Da v
       }
-      {(λx\!:\!t.e_2)~e_1 \Da v}
+      {(λx.e_2)~e_1 \Da v}
     }
-    {\<let>~x:t=e_1~\<in>~e_2 \Da v}
+    {\<let>~x=e_1~\<in>~e_2 \Da v}
   \]
   \caption{Evaluation Rule Derivation of $\mathit{let}$}
   \label{fig:let}
 \end{figure}
 
-This approach seems natural. However, after further examination, we are faced with several challenges:
-(1) In most cases, it is not possible to statically determine where a lambda abstraction is called,
+However, not everything works well like this.
+%we define this simple (type) lifting algorithm cannot ensure abstraction.
+% We can show that this simple semantics lifting algorithm is correct, but only partial abstraction can be guaranteed.
+Consider the following translation rule
+ \[ \<andf> ->_d \lambda x.~ \lambda y.~ \<if>~x~\<then>~y~\<else>~\<false> \]
+which defines a language construct $\<andf>$ in DSL over the host language.
+%, whose definition is a lambda abstraction with host language construct $\<if>$.
+Following similar steps as above, we can construct a derivation tree and obtain the \appdiwchanged{following evaluation} rule for $\<andf>$: 
+\[ \inference{}{\<andf> \Da \lambda x.~ \lambda y.~ \<if>~x~\<then>~y~\<else>~\<false>}. \]
+\appdiwchanged{The rule still uses} the host language construct $\<if>$ \appdiwchanged{and thus} leads to abstraction leakage, in the sense that \appdiwchanged{the evaluation of a DSL program} may use the evaluation rules of the host language.
+
+This example reveals an important difference between evaluation and typing rules.
+In typing rules, the type of an expression is usually determined by its sub-expressions' types.
+By applying the type rules recursively, the resulting typing rules of DSL constructs defined by the translation rules are \appdiwchanged{eventually} premised on the types of their individual sub-expressions.
+However, \appdiwchanged{such a} compositionality \appdiwchanged{property} may not hold for evaluation rules. 
+For example, it is not always possible to statically determine where a lambda abstraction is \appdiwchanged{applied},
  and thus it is not possible to statically evaluate the abstraction body.
- When a lambda abstraction is used in a translation rule for a DSL construct definition,
- the evaluation of these host language constructs in the abstraction body is delayed until that lambda abstraction is actually applied at run time.
- Therefore, lambda abstraction with host language constructs may lead to abstraction leakage.
-(2) The evaluation rules of applications and let bindings contain the evaluation of substitution in premises, like $e[v/x]$.
- In a concrete derivation, $e$ may be replaced by some compound expression.
- For example, in the derivation of translation rule $e_1~or'~e_2=>\<let>~x:\<bool>=e_1~\<in>~\<if>~x~x~\<false>$, 
-  the premises will be $e_1\Da v_1$ and $(\<if>~x~x~e_2)[v_1/x]\Da v$.
-For the second premise,
- on the one hand, we need to apply the evaluation rule of $\<if>$ statically for abstraction;
- on the other hand, we need to carefully consider the relationship between the scope of $x$ and sub-expressions like $e_2$ in order to prevent hygiene problem \cite{hygine}.
- Therefore, the derivation with substitution should be stated to maintain abstraction while ensuring correctness.
-(3) When deriving rules, we recursively generate premises based on tzhe evaluation rules of language constructs.
- However, the evaluation of many language constructs, like $\<if>$, is defined by multiple rules.
- This may lead to several branches when applying rules in derivation.
+When a lambda abstraction is used in a translation rule,
+ the evaluation of these host language constructs in the body is delayed until that lambda abstraction is actually applied at run-time, which induces abstraction leakage.
 
-To address challenge (1),
- we apply a method similar to \textit{lambda lifting} transformation to translation rules,
- to reveal the body of abstraction \cite{lambda-lifting}.
-To address challenge (2),
- we impose strict requirements on translation rules to avoid hygienic problems and ensure correctness,
- and show that applying substitution statically can maintain abstraction.
-To address challenge (3),
- we use Skeletal semantics to describe the behaviour of language constructs \cite{skeleton}.
- Each language construct has a unique rule, which facilitates derivation. % guarantees the determinism in derivation.
- We use Skeleton as the meta-language and implement semantic lifting by deriving Skeleton rules for DSL constructs.
+%Also, some meta-functions are introduced in the evaluation rules, like substitutions in applications and $\<let>$-bindings.
+%Prudent use of meta-functions is required for avoiding abstraction leakage.
+%Therefore, in semantics lifting, we should handle these meta-functions carefully and prove that they do not break abstraction.
 
-By applying techniques above, combined with the existing approach for type lifting,
- developers can define DSLs via translation rules,
- and get the automatically derived evaluation and typing rules of DSLs,
- which maintain abstraction property of DSLs.
-At this point, DSLs are host language independent, or standalone.
-DSL users are allowed to be fully agnostic of the underlying host language.
-Language constructs in the host language that are not expected to be used in the DSL can be safely removed.
-We call this \textit{language lifting}, as shown in Fig. \ref{fig:layers}.
-
-\begin{figure}[t]
-  \input{assets/layers.tikz}
-  \caption{Language Lifting}
-  \label{fig:layers}
-\end{figure}
-
-Moreover, the expressiveness of the host language is sometimes insufficient, the absence of some datatypes makes it impossible to define a DSL by translation rules.
-To solve this problem, 
- our framework provides meta-extensions (to introduce new primitive operations and datatypes) and monad-extensions (to introduce side effects)
- to extend host language without changing existing semantics.
-And to describe the evaluation after monad extensions, we add monad support to the meta-language.
-DSL developers can define the DSL constructs via translation rules based on this extended host language now.
-We consider this to be a generic DSL design pattern:
- various languages containing different features are extended from the host language,
- and the DSL developers select the appropriately-extended host language and define the DSLs by translation rules.
-In this paper, we use simply-typed lambda-calculus (\STLC) as the basic host language.
-
-Our main technical contributions can be summarized as follows:
+In this paper, we present a general framework for semantics lifting, addressing the difficulties stated above.
+%We prove that both both the abstraction and correctness properties of semantics lifting hold.
+With this framework, developers define a DSL via translation rules from the DSL to the host language and automatically obtain evaluation rules for the DSL.
+These DSLs \appdiwchanged{with the obtained evaluation rules become independent of} the host language, such that users can be fully agnostic of the host language. %Language constructs in the host language that are not expected to be used in the DSL can be safely removed.
+Our main technical contributions are summarized as follows:
 
 \begin{itemize}
-  % \item We design a meta-language to describe the evaluation rules and typing rules of a language structurally.
-  %   % The meta-language can be extended in a modular way.
-  %   We formalize the syntax and semantics of our meta-language (Section \ref{sec:meta}).
-  %   And then, we define the host language \STLC{} using meta-language (Section \ref{sec:m-host}).
-  \item We present a semantics lifting algorithm for DSL constructs defined by translation rules (Section \ref{sec:tr}), and prove the correctness and the abstraction properties of the algorithm.
-    % For translation rules defined with lambda abstraction, we illustrate lambda lifting algorithm to maintain abstraction property.
-    % Besides, evaluation rules with substitution will not break these properties.
-  \item We propose a general DSL implementation workflow, using \STLC{} as the host language:
-    first introduce vocabularies by meta-extensions and new language features by monad extensions (Section \ref{sec:ex}),
-    then define the DSL constructs by translation rules on the extended language.
-    % For each step, we give a formal description with examples.
-    % And two strict requirements will be applied to translation rules.
-  % \item We present an algorithm to derive evaluation and typing rules for DSL constructs defined by translation rules (Section \ref{sec:alg}).
-  %   As major properties of algorithms, we give proofs of correctness and abstraction. 
-  %   For translation rules defined with lambda abstraction,
-  %    we illustrate lambda lifting method to maintain abstraction property.
-  %   Besides, these properties can be guaranteed with substitution in derivation.
-  \item We give an implementation of the framework called Osazone (Section \ref{sec:impl}), showcase several case studies as evidence for the power of Osazone (Section \ref{sec:eval}).
+  \item We propose a general semantics-lifting algorithm and provide sufficient conditions for guaranteeing the correctness of the algorithm. 
+  % \item \todo{weird}We propose a general semantics-lifting algorithm, which is much more powerful than the type-lifting algorithm. One key point is using the known lambda-lifting technique to expose the hidden constructs in the lambda expression.  
+  % We provide sufficient conditions for guaranteeing the correctness of the algorithm. 
+  %The algorithm satisfies weak abstraction.
+  \item We present a systematic theory that clarifies the assumptions about the host language, meta-functions, and translation rules. 
+  We prove that under \appdiwchanged{a few} reasonable assumptions, semantics lifting is correct and preserves abstraction boundaries. 
+  \item We have implemented the framework as a system called Osazone, which supports users to define DSL translation rules and automatically generates an interpreter for the DSL. We give several non-trivial case studies to show the power of Osazone.
+  % \item We propose a general DSL implementation workflow, using \STLC{} as the host language:
+  %   first introduce vocabularies by meta-extensions and new language features by monad extensions (Section \ref{sec:ex}),
+  %   then define the DSL constructs by translation rules on the extended language.
+  % \item We give an implementation of the framework called Osazone (Section \ref{sec:impl}), showcase several case studies as evidence for the power of Osazone (Section \ref{sec:eval}).
 \end{itemize}
-
-% Note that the focus of this paper is on the semantics of the language rather than the syntax. 
-% Extensions to the syntax, such as parser implementation for DSLs, are not the topic of this paper.

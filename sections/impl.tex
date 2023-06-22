@@ -1,45 +1,69 @@
 \section{Implementation}\label{sec:impl}
 
-We have implemented a prototype of our framework for DSL engineering in Haskell, named \textit{Osazone}.
-Osazone allows users to define a host language by meta-language (Section \ref{sec:host}),
- and design a DSL by extensions (Section \ref{sec:ex}) and translation rules (Section \ref{sec:tr}).
+We have implemented a prototype of our framework in Haskell, named \textit{Osazone}. To describe the semantics of a language, we design a meta-language. Osazone allows users to define host languages by this meta-language, and design DSLs by some extensions and translation rules. We propose a general \textit{workflow} \appdiwchanged{to implement DSLs} in Osazone. \appdiwchanged{A developer should} start by taking a language as the host language, introduce vocabularies by primitive extensions, and define new language features by monad extensions. \appdiwchanged{The developer can then define} the DSL constructs by translation rules from the extended language.
 
-For the meta-language design, we distinguish between two types of filters in the implementation:
- pure filters and monadic filters.
-The former contains pure computation, while the latter contains side effects.
-For example, $(+)$ of sort $(\Int,\Int)->\Int$ is implemented as a pure filter,
- while $plus$ of sort $(\Val,\Val)->m~\Val$ is a monadic filter.
-Specifically, substitution is also seen as a pure filter, defined by a set of substitution rules.
+Primitive extensions involve adding new language constructs with corresponding rules directly to the host language.
+When the expressiveness of the host language is insufficient, e.g., some data types are absent, it would be impossible to define a DSL by translation rules. In this case, new data types and operations can be introduced by primitive extensions. Also, monad extension is a technique for incorporating side effects in computation without changing the original semantics definition. For instance, the language \Func\ can be extended from simply-typed lambda calculus using monad extensions. In Sec. \ref{sec:eval}, we will provide examples of language engineering using primitive extensions, monad extensions, and translation rules. 
+% We use horizontal arrows to indicate primitive or monad extensions and vertical arrows to
+% \diwchanged{
+% indicate defining DSLs using translation rules.
+% }
 
-A language is called a project in Osazone.
-Osazone takes the language definition and program entrances as input.
-In the implementation, the language definition contains both the evaluation rules and the typing rules.
-Here program entrance specifies the initial state of the environment when monad is introduced in computation.
-For example, the entrance of evaluation in \textsc{Ref} without IO is 
-$\mathit{runId}~(\mathit{runState}~\EE{\bullet}~\mathit{empty})$
+\paragraph{Meta-language}
 
-Osazone then provides an interpreter for this language, by generating Haskell code.
-A program can be evaluated and typed using the interpreter.
+In big-step operational semantics, 
+some language constructs have multiple evaluation rules,
+which leads to several branches when applying the evaluation rules in a derivation.
+To overcome this issue, Osazone introduces a meta-language for defining language semantics,
+ where each language construct has only one evaluation rule.
+Our meta-language is based on Skeleton \cite{skeleton}.
+Using our meta-language, we can define the evaluation of $\<if>$ expressions using a single rule, as follows:
+\[
+  \llbracket \<if>~e_1~\<then>~e_2~\<else>~e_3 \rrbracket \cqq
+  \llbracket e_1 \rrbracket : \branch{
+    \<true>  |> \llbracket e_2 \rrbracket \\&
+    \<false> |> \llbracket e_3 \rrbracket
+  }.
+\]
+Here, $\llbracket e_1 \rrbracket$ represents the evaluation of sub-expression $e_1$.
+The result of this evaluation is used to select a specific branch through pattern matching (after the colon),
+after which subsequent computations are processed (after the triangle).
+If $e_1$ evaluates to $\<true>$, $e_2$ will be evaluated;
+ and if $e_1$ evaluates to $\<false>$, $e_3$ will be evaluated.
+
+In our approach, all evaluation rules can be expressed through recursive computations, meta-operations, and branches.
+This method simplifies the semantics definition, 
+ improves the clarity and coherence of the derivation process, 
+ and enhances the overall usability of our framework.
+
+% In Osazone, we distinguish between pure meta-functions and monadic meta-functions.
+% The former contains pure computation, while the latter contains side effects.
+% For example, $plus$ can be implemented as a pure meta-function,
+%  while $store$ is a monadic one.
+% Specifically, substitution is also seen as a pure meta-function, defined by a set of substitution rules.
+
+\paragraph{Define languages in Osazone}
+
+In Osazone, the definition of a language includes evaluation rules and typing rules. When a monad is introduced, the {developer} also needs to define the program entrance. For example, the entrance of evaluation in \Func\ is $\mathit{runState}~ \llbracket \bullet \rrbracket ~\mathit{empty}$, where $\mathit{runState}$ takes the initial state and returns the value of computation and final state. Osazone then {automatically derives} an interpreter for this language, by generating Haskell code \appdiwchanged{of the interpreter}. A program can be evaluated and typed using the interpreter.
 % In addition, users can provide parser (with Parsec \cite{mpc, parsec}) and pretty printer of the language,
 %  replacing the default ones.
 
-To define a DSL, users need to provide the host language, 
-  a file for meta-extensions (first step), 
+To define a DSL, {developers} need to choose a host language, as well as provide 
+  a file for primitive extensions (first step), 
   a file for monad extensions (second step),
-  a file for translation rules (third step).
+  and a file for translation rules (third step).
 % a configuration file to filter language constructs of the host language preserved in the DSL.
-Since monad extensions are always accompanied by meta extensions,
- meta-extensions can also be performed in monad extensions.
-But these three steps of extensions are processed one by one.
-Monadic meta-functions defined in the first step will be lifted automatically in the second step,
- while those in the monadic extensions will not.
-Translation rules are finally analyzed, generating corresponding rules.
-We also derive the type rules in a similar way.
-Therefore, the type rules of these new language constructs are also valid.
-% The configuration file is designed to make the DSL standalone:
-%  redundant language constructs can be removed safely (because of abstraction).
-% Language constructs for values are always preserved.
-The output of Osazone is a new project for this DSL definition.
-Then an interpreter of DSL is obtained for free.
+The definitions of primitive extensions are directly added to the language. In the monad extension, all the meta-functions are lifted through a monad transformer to obtain the definition of the extended language. Then, the translation rules are analyzed one by one. Our implementation derives both the evaluation rules and the type rules for each translation rule. These rules are added to the extended language. Users can choose certain language constructs from the mixed language as the constructs of the DSL, and Osazone will automatically select a minimal closed subset containing these language constructs as the output language. Finally, we get the definition of DSL, and an interpreter of DSL is obtained for free.
 
-We will provide an example to demonstrate the usefulness of our framework in the next section.
+% Monad extensions are always accompanied by primitive extensions.
+% But these three steps of extensions are processed one by one.
+% Monadic meta-functions defined in the first step will be lifted automatically in the second step,
+%  while those in the monadic extensions will not.
+% Translation rules are finally analyzed, generating corresponding rules.
+% We also derive the typing rules in a similar way.
+% Therefore, the typing rules of these new language constructs are also valid.
+% % The configuration file is designed to make the DSL standalone:
+% %  redundant language constructs can be removed safely (because of abstraction).
+% % Language constructs for values are always preserved.
+% The output of Osazone is a new project for this DSL definition.
+% Then an interpreter of DSL is obtained for free.

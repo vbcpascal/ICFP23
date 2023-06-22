@@ -1,0 +1,598 @@
+\section{Theory} \label{sec:host}
+
+In this section, we develop the theory of our semantics-lifting framework. In Sec. \ref{sec:host-languages}, we give a functional language with reference \Func{} as the host language and formalize non-abstract component of a language construct. In Sec. \ref{sec:translation-rules}, we  discuss the definition and requirements of translation rules. In Sec. \ref{sec:semantics-lifting}, we formalize the semantics lifting algorithm with several examples. Finally, in Sec. \ref{sec:properties}, we show the desired properties hold, i.e., correctness and abstraction.
+
+% \diw{Please add a few sentences to provide a roadmap through the subsections, e.g., Sec. \ref{sec:host-languages} discusses XXX ...}
+
+\subsection{Host Language}
+\label{sec:host-languages}
+
+Our approach supports a wide range of host languages.
+In particular, we support host languages with side effects that can be described using monads \cite{monad-1, monad-2}.
+Many practical language features can be defined with monads, such as environment, store, non-determinism, I/O, etc.
+In certain cases, multiple effects can be combined together by a mechanism called monad transformers \cite{monad-tr}.
+% 王老师，欢迎上线 :) 辛苦了！
+\begin{figure}
+    \begin{align*}
+    e    & ::= x \mid \lambda x.~e \mid (e~e)_V \mid (e~e)_N \mid \<true> \mid \<false> \mid \<if>~e~\<then>~e~\<else>~e \\
+         & \quad \mid i \mid e + e \mid e = e \mid e < e \mid () \mid \<let>~x=e~\<in>~e \mid e; e \\
+         & \quad \mid (e, e) \mid e.1 \mid e.2 \mid \<inl>~e \mid \<inr>~e \mid \<case>~e~\<of>~\{\<inl>~x => e ~|~\<inr>~x => e \} \\
+         & \quad \mid \<nil> \mid \<cons>~e~e \mid \<head>~e \mid \<tail>~e \mid \<isnil>~e \mid \<fix>~e \\
+         & \quad \mid \<ref>~e \mid\ !e \mid e := e \mid l \\
+    v    & ::= \lambda x.~e \mid \mathit{true} \mid \mathit{false} \mid i \\
+         & \quad \mid () \mid (v, v) \mid \<inl>~v \mid \<inr>~v \mid \<nil> \mid \<cons>~v~v \mid l 
+    \end{align*}
+    \caption{Syntax of \Func}
+    \label{fig:func_syn}
+\end{figure}
+
+We present an example host language \Func, which uses state monad to implement references. The syntax of this language is given in Fig. \ref{fig:func_syn}.
+%Most of the constructs are taken from Types and Programming Languages \cite{tapl}.
+We introduce two types of application in \Func: call-by-value and call-by-name. We use $\Da_S$ for evaluation with the state monad, where the state maps store locations to values.
+%Also, some meta-functions like $\<alloc>$ are introduced for storage.
+The monad provides meta-functions like $\<alloc>$ for state management, and we use the notation $=>_S$ to expression the return value of meta-functions. Below defines the form of evaluation judgements and rules:
+\begin{align*}
+    j \in \text{Judgement} 
+     & ::= e \Da_S v \mid [x \mapsto e_1, ...]e \Da_S v \mid f(e_1,\cdots,e_n) =>_S v \\
+    r \in \text{Rule} & ::= \inference{j_1 \; \cdots \; j_n}{c~e_1\cdots e_n \Da_S v}
+\end{align*}
+There are two kinds of meta-functions, similar to the setting we discussed in Sec. \ref{sec:2-2}.
+% Note that two sorts of meta-operations are shown here. \todo{Primitive operation}
+One of them is the substitution at the syntactic level, whose output is an expression for evaluation.
+The other one is monadic computation at the semantics level, ranged over by $f$. 
+We require that the output of the latter kind of meta-functions be values.
+Some of the evaluation rules of \Func\ is shown in Fig. \ref{fig:func_sem}.
+Because we pass state implicitly through the state monad, the judgements in the premises must be seen as operations performed from left to right,
+and cannot be exchanged with each other.
+For example, in Haskell, the evaluation of $\<ref>~e$ can be defined as roughly follows:
+\[ \mathit{eval~(Ref\ e) = do~~ \{ 
+    v\leftarrow eval~e;
+    l\leftarrow alloc;
+    () \leftarrow store~l~v;
+    return~l \}} \]
+
+We use $R(c~e_1\cdots e_n)$ or $R(c)$ to denote rules of a language construct $c$.
+
+\begin{figure}
+\addtolength{\jot}{5pt}
+    \begin{gather*}
+        \inference{}{v \Da_S v} \qquad 
+        \inference{e_1 \Da_S \lambda x.~e & e_2 \Da_S v_2 & [x\mapsto v_2]e \Da_S v}{(e_1~e_2)_V \Da_S v} \\
+        \inference{e_1 \Da_S \lambda x.~e & [x\mapsto e_2]e \Da_S v}{(e_1~e_2)_N \Da_S v} \\
+        % \inference{e_1 \Da_S \<true> & e_2 \Da_S v_2}{\<if>~e_1~\<then>~e_2~\<else>~e_3 \Da_S v_2} \qquad
+        % \inference{e_1 \Da_S \<false> & e_3 \Da_S v_3}{\<if>~e_1~\<then>~e_2~\<else>~e_3 \Da_S v_3} \\
+        \inference{e_1 \Da_S v_1 & e_2 \Da_S v_2 & plus(v_1,v_2) =>_S v}{e_1 + e_2 \Da_S v} \\
+        % \inference{e_1 \Da_S v_1 & e_2 \Da_S v_2 & eq(v_1,v_2) =>_S v}{e_1 = e_2 \Da_S v} \\
+        % \inference{e_1 \Da_S v_1 & e_2 \Da_S v_2 & lt(v_1,v_2) =>_S v}{e_1 < e_2 \Da_S v} \\
+        \inference{e_1 \Da_S v_1 & [x\mapsto v_1]e_2 \Da_S v}{\<let>~x=e_1~\<in>~e_2 \Da_S v} \\
+        % \inference{e_1 \Da_S v_1 & e_2 \Da_S v_2}{(e_1, e_2) \Da_S (v_1, v_2)} \qquad
+        % \inference{e \Da_S (v_1, v_2)}{e.1 \Da_S v_1} \qquad 
+        % \inference{e \Da_S (v_1, v_2)}{e.2 \Da_S v_2} \\
+        % \inference{e \Da_S v}{\<inl>~e \Da_S \<inl>~v} \qquad
+        % \inference{e \Da_S v}{\<inr>~e \Da_S \<inr>~v} \\
+        % \inference{e \Da_S \<inl>~v & [x_1\mapsto v]e_1 \Da_S v_1}{\<case>~e~\<of>~\{\<inl>~x_1 => e_1 ~|~\<inr>~x_2 => e_2\} \Da_S v_1} \\
+        % \inference{e \Da_S \<inr>~v & [x_2\mapsto v]e_2 \Da_S v_2}{\<case>~e~\<of>~\{\<inl>~x_1 => e_1 ~|~\<inr>~x_2 => e_2\} \Da_S v_2} \\
+        % \inference{e_1 \Da_S v_1 & e_2 \Da_S v_2}{\<cons>~e_1~e_2 \Da_S \<cons>~v_1~v_2} \quad
+        % \inference{e \Da_S \<cons>~v_1~v_2}{\<head>~e \Da_S v_1} \quad
+        % \inference{e \Da_S \<cons>~v_1~v_2}{\<tail>~e \Da_S v_2} \\
+        % \inference{e \Da_S \<nil>}{\<isnil>~e \Da_S \<true>} \qquad
+        % \inference{e \Da_S \<cons>~v_1~v_2}{\<isnil>~e \Da_S \<false>} \\
+        \inference{e \Da_S \lambda x.~e' & [x\mapsto \<fix>~(\lambda x.~e')]e'\Da_S v}{fix~e \Da_S v} \\
+        \inference{e \Da_S v & \<alloc>()=>_S l & \<store>(l,v)=>_S ()}{\<ref>~e \Da_S l} \qquad
+        \inference{e \Da_S l & \<fetch>(l)=>_S v}{!e \Da_S v} \\
+        \inference{e_1 \Da_S l & e_2 \Da_S v & \<store>(l,v)=>_S ()}{e_1 := e_2 \Da_S ()}
+    \end{gather*}
+    \caption{Selected Evaluation Rules of \Func}
+    \label{fig:func_sem}
+\end{figure}
+
+\paragraph{Extract Non-abstract Components}
+
+In Sec. \ref{sec:2-3}, we have demonstrated that the body of a lambda expression is non-abstract,
+%not \textit{abstract},
+ as the evaluation of the body will be delayed.
+This delay in evaluation can lead to issues with the abstraction property if a host-language construct is used within the body of the lambda expression.
+It will be reserved in the evaluation rules of the DSL construct. 
+This can result in an undesirable violation of the abstraction property.
+
+We call $e$ in $\lambda x.~e$ a \textit{non-abstract component}. 
+In the RHSs of translation rules, we cannot use host-language constructs in these non-abstract components. 
+Roughly speaking, a sub-expression $e_i$ is a non-abstract component of a language construct $c~e_1\cdots e_n$ if the sub-expression $e_i$ is:
+\begin{itemize}
+    \item used directly in the evaluated result, or
+    \item passed as an argument to meta-functions in the evaluation rules of $c$.
+\end{itemize}
+
+In \Func, most of the language constructs have no non-abstract components;
+the only two exceptions are lambda abstraction and call-by-name application.
+In a call-by-name application $(e_1~e_2)_N$, 
+the expression $e_2$ is used as an argument of a meta-function (i.e. substitution).
+Hence, in the translation rules defined by call-by-name application, 
+$e_2$ will not be evaluated until the substitution occurs, i.e., the evaluation of $e_2$ is delayed.
+
+Formally, we use $\delta(c_h~e_1\cdots e_n)$ to extract all the non-abstract components of $c_h$, 
+where $c_h$ is a host-language construct and $e_1,\cdots, e_n$ are meta-variables.
+The formal definition of $\delta$ is shown in Fig. \ref{fig:non-abs}.
+Here are two examples:
+\[ \delta(\lambda x.~e)=\{e\} \qquad \delta((e_1~e_2)_N)=\{e_2\} \]
+
+\begin{figure}
+    \begin{align*}
+        \delta(c_h~e_1\cdots e_n) & = \bigcup_{r\in R(c_h)} \delta_r(r) \\
+        \delta_r(\inference{j_1\cdots j_m}{c_h~e_1\cdots e_n \Da_S v}) & = 
+            \bigcup_{i\in [1..m]}\delta_j^{\{e_1\cdots e_n\}}(j_i) \cup \delta_e^{\{e_1\cdots e_n\}}(v) \\
+        \delta_j^P(e\Da_S v) & = \left\{ 
+            \begin{aligned}
+                & \emptyset & & \text{if $e\in P$} \\
+                & \delta_e^P(e) & & \text{otherwise}
+            \end{aligned}
+        \right. \\
+        \delta_j^P([x_1\mapsto e'_1 \cdots x_p\mapsto e'_p]e'\Da_S v) & = \bigcup_{i\in [1..p]} \delta_e^P(e'_i) \cup \delta_e^P(e') \cup \delta_e^P(v) \\
+        \delta_j^P(f(e_1\cdots e_q)=>_S v) & = \bigcup_{i\in [1..q]} \delta_e^P(e_i) \cup \delta_e^P(v) \\
+        \delta_e^P(c_h'~e_1\cdots e_{n'}) & = \bigcup_{i \in [1..n']} \delta_e^P(e_i) \\
+        \delta_e^P(e) & = \left\{
+            \begin{aligned}
+                & \{ e \} & & \text{if $e\in P$} \\
+                & \emptyset & & \text{otherwise}
+            \end{aligned}
+        \right.
+    \end{align*}
+    \caption{Non-abstract Components Extraction}
+    \label{fig:non-abs}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Translation Rules}
+\label{sec:translation-rules}
+
+A translation rule defines a new language construct by showing how to translate it into the host language.
+A rule $tr$ defining a new construct $c_n$ has the following shape: 
+\[ c_n~\alpha_1\cdots \alpha_n ->_d e, \]
+where $\alpha_i$ are meta-variables for expressions that may appear in the RHS.
+We call constructs defined by translation rules \textit{surface constructs}.
+%To ensure that translation rules are properly defined, we impose the following requirements:
+%\begin{itemize}
+%    \item \textit{Unique}. Each surface construct must be defined by a unique translation rule.
+%    \item \textit{Non-recursive}. Language constructs in the RHS must either belong to the host language, or surface constructs defined earlier.
+%    \item \textit{Closed}. The translation rule must be closed, which means any variable used in the RHS must be bound locally.
+%\end{itemize}
+%We will provide further explanations for these requirements immediately.
+
+% Furthermore, we do not consider it as a general requirement of the translation rules that 
+% the non-abstract components of any language construct in the RHS cannot use the host language constructs,
+% but rather a condition that we guarantee abstraction property.
+
+% [ 小剧场 ]
+% 帮我看看这句话 ↑ 什么玩意啊
+% 我也没看懂
+% 这句话的意思是，关于非抽象成分不能出现宿主语言构造这个要求，是我们的framework的，而不是一般性的要求。
+% 我觉得用requirement这个词就足够了，不需要单独解释一下
+% 那也行
+
+\subsubsection{Translation}
+
+%The syntax of the DSL is mixed by the host language and these new translation rules. 
+We use $\DS{\bullet}$ to denote the full translation from a DSL expression to the corresponding host expression. 
+Intuitively, it recursively expands DSL constructs to their definitions, and maintains the structure of host constructs.
+Formally:
+\begin{align*}
+    \DS{c_h~e_1\cdots e_n} & = c_h~\DS{e_1}\cdots \DS{e_n} \qquad
+     & & \text{if $c_h$ is a host language construct} \\
+    \DS{c_n~e_1\cdots e_n} & = \DS{\sigma(e)} \qquad
+     & & \text{if $c_n$ is defined by $c_n~\alpha_1\cdots \alpha_n ->_d e$} \\
+     & & & ~\text{and $\sigma=\{\alpha_1\mapsto e_1, ..., \alpha_n\mapsto e_n\}$} 
+\end{align*}
+where $\sigma$ is a substitution. 
+Translation can be extended into judgements as:
+\[ \DS{e \Da_S v} = \DS{e} \Da_S \DS{v}. \]
+
+\subsubsection{Requirements}
+
+To ensure that translation rules are properly defined, we impose the following requirements:
+\begin{itemize}
+    \item \textit{Unique}. Each surface construct must be defined by a unique translation rule.
+    \item \textit{Non-recursive}. Language constructs in the RHS must either belong to the host language, or surface constructs defined earlier.
+    \item \textit{Closed}. The translation rule must be closed, which means any variable used in the RHS must be bound locally.
+\end{itemize}
+
+The first requirement ensures that during translation the applicable rule for each surface construct is determined.
+The second requirement states that translation rules cannot be defined recursively, because recursive rules possibly lead to non-terminating translation.
+
+The third requirement pertains to the scope of the variables.
+\citet{infer-scope} provide a method to infer scopes through translation rules
+ and we \appdiwchanged{adopt their approach in our framework}.
+By enforcing this requirement, scope safety is ensured.
+Specifically, the requirement prohibits capturing external variables
+and requires that locally bound variables be explicitly parameterized.
+% for use in other parameters.
+
+\begin{example}
+Consider the following two translation rules and their sample programs:
+\[
+  \begin{array}{cl|cl}
+    % \text{Translation Rules} & & \text{Sample Programs} \\
+    \mathit{leaked}~e ->_d \<let>~x=1~\<in>~e
+    & \text{(\ding{51})}
+    & \mathit{leaked}~(x+1)
+    & \text{(\ding{55})} \\
+    \mathit{captured}~e ->_d \<if>~x~\<true>~e
+    & \text{(\ding{55})}
+    & \<let>~x =\<true>~\<in>~\mathit{captured}~\<false>
+    & \text{(\ding{55})}
+  \end{array}
+\]
+
+The first rule, $\mathit{leaked}$, attempts to bind the constant value $1$ to the variable $x$ whose scope is $e$.
+However, since $x$ is bound locally in translation rule and not declared in the DSL program,
+using $x$ in $e$ is not allowed.
+(But the translation rule is actually permitted.)
+Alternatively, we can use the following definition to comply with the requirement:
+\[ \mathit{leaked}'~x~e ->_d \<let>~x =1~\<in>~e, \]
+and $x$ can be used in $e$ of $\mathit{leaked}'$.
+
+The second rule, $\mathit{captured}$, tries to obtain the value of $x$ from the current environment,
+ which may result in unbound identifiers after translation.
+The translation rule itself is not allowed.
+
+\qed
+\end{example}
+
+Enforcing the requirement of closed translation rules ensures that our translation system are hygienic.
+Programming languages with non-hygienic macro systems may cause the hygiene problem,
+ where variable bindings can potentially hidden by macros and vice versa \cite{hygine}.
+For instance, suppose we define a translation rule $\<or>'$ via $\<let>$:
+\[ e_1~\<or>'~e_2 ->_d \<let>~x=e_1~\<in>~\<if>~x~\<then>~x~\<else>~e_2 \]
+ where $x$ is a literal identifier. 
+Then the expression $\<let>~x=\<false>~\<in>~(\<true>~or'~x)$ will be translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~\<then>~x~\<else>~x$, causing an unintended behavior,
+ since the same variable $x$ is used in both the inner and outer scopes.
+Closed translation rules ensure no unbound-identifier exceptions \cite{infer-scope}.
+Therefore, we can modify the names of variables safely just like $\alpha$-equivalence.
+\textit{We treat literals variables bound in the RHS as \appdiwchanged{exchangeable} and always fresh.
+  \appdiwchanged{Thus} the translation is always hygienic.}
+
+% For each language construct defined by a translation rule,
+%  the developer needs to define substitution rules for it,
+%  just like those of the host language.
+%  In fact, the substitution rule should be automated by the derivation of the scope.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Semantics Lifting}
+\label{sec:semantics-lifting}
+
+In this section, we formalize the semantics-lifting algorithm.
+As translation rules are assumed to be not mutually defined, we can process the translation rules one by one.
+Suppose that the translation rule $tr$ has the shape $c_n~\alpha_1\cdots \alpha_n ->_d e$.
+We aim to get the evaluation rules of $c_n$.
+
+The core idea of deriving evaluation rules has been shown in Sec. \ref{sec:overview}: expand evaluation of compound expressions recursively according the host evaluation rules until all the evaluations are not expandable.
+Formally, we use $d$ for one-step static (symbolic) derivation, which accepts a judgement and returns a set of lists of judgements. Intuitively, it applies each possible rule for the input judgement, and each of them produces a list of judgements.
+The definition of $d$ is given in Fig. \ref{fig:one-step}.
+For example:
+\[ d(\<if>~\alpha~\<then>~\beta~\<else>~\<false> \Da_S v) = \left\{  
+      \begin{aligned}
+        & [ \alpha \Da_S \<true>, \beta \Da_S v ] \\
+        & [ \alpha \Da_S \<false>, \<false> \Da_S \<false>,  v=\<false> ]
+      \end{aligned}
+    \right\} \]
+
+\begin{figure}
+    \begin{align}
+        d(\alpha_i \Da_S v) & = \{ [ \alpha_i \Da_S v ] \} \label{fm:1} \\
+        d([x\mapsto e]\alpha_i \Da_S v) & = \{ [ [x\mapsto e]\alpha_i \Da_S v ] \} \label{fm:2} \\
+        d([x\mapsto e_1, ...]e_2 \Da_S v) & = d(e \Da_S v) \qquad \text{if $[x\mapsto e_1, ...]e_2=e$} \\
+        d(c_h~e_1\cdots e_m \Da_S v) & = \left\{ [\sigma(j_1)\cdots \sigma(j_p)] \given \begin{aligned}
+            & r \in R(c_h), r = \inference{j_1\cdots j_p}{c_h~e_{x1}\cdots e_{xm} \Da_S v} \\
+            & \sigma=\{e_{x1}\mapsto e_1 \cdots e_{xm}\mapsto e_m \}
+        \end{aligned} \right\} \\
+        d(f(e_1\cdots e_n) =>_S v) & = \{ [ f(e_1\cdots e_n) =>_S v ] \} \label{fm:3}
+    \end{align}
+    \caption{One-step Static Derivation}
+    \label{fig:one-step}
+\end{figure}
+ 
+% \begin{lemma}
+%     If $[j_1\cdots j_n] \in d(j)$, then $\inference{j_1\cdots j_n}{j}$.
+% \end{lemma}
+
+We can define $d^{*}$ to represent a recursive derivation until all the judgements are of the form (\ref{fm:1}), (\ref{fm:2}) and (\ref{fm:3}). 
+Formally, $d^{*}$ can be defined in Fig. \ref{fig:derivation}. 
+
+\begin{figure}
+    \begin{align}
+        \ds{\alpha_i \Da_S v} & = \{ [ \alpha_i \Da_S v ] \} \label{fm:ds1} \\
+        \ds{[x\mapsto e]\alpha_i \Da_S v} & = \{ [ [x\mapsto e]\alpha_i \Da_S v ] \} \label{fm:ds2} \\
+        \ds{[x\mapsto e_1, ...]e_2 \Da_S v} & = \ds{e \Da_S v} \qquad \text{if $[x\mapsto e_1, ...]e_2=e$} \\
+        \ds{c_h~e_1\cdots e_m \Da_S v} & = \left\{ J_1 \apd \cdots \apd\ J_p \given \begin{aligned}
+            & [j_1\cdots j_p] \in d(c_h~e_1\cdots e_m \Da_S v) \\
+            & J_1 \in \ds{j_1} , \cdots , J_p \in \ds{j_p}
+        \end{aligned} \right\} \\
+        \ds{ f(e_1\cdots e_n) =>_S v } & = \{ [ f(e_1\cdots e_n) =>_S v ] \} \label{fm:ds3}
+    \end{align}
+    \caption{Recursive Static Derivation}
+    \label{fig:derivation}
+\end{figure}
+
+% \begin{lemma}
+%     If $[j_1\cdots j_n] \in \ds{j}$, then $\inference{j_1\cdots j_n}{j}$.
+% \end{lemma}
+
+According to the above definition, given a translation rule $c_n~\alpha_1\cdots \alpha_n ->_d e$, the evaluation rules of $c_n$ are
+\[ \left\{ \inference{j_1\cdots j_m}{c_n~\alpha_1\cdots \alpha_n \Da_S v} \given [j_1\cdots j_m]\in \ds{e\Da_S v} \right\}. \]
+
+%To illustrate the algorithm, some examples will be presented.
+
+\appdiwchanged{We now discuss some examples to illustrate the algorithm.}
+% To illustrate the algorithm, we present some examples.
+Example \ref{exm:nand} defines $\<nand>$ by $\<not>$ and $\<and>$, assuming that the evaluation rules of $\<not>$ and $\<and>$ have been derived already.
+%We observe that how $d^{*}$ works recursively.
+Example \ref{exm:orp} defines $\<or>'$ by a $\<let>$-binding \appdiwchanged{and an $\<if>$ expression.}
+%We will demonstrate the role of hygiene in semantics lifting.
+% For clarity, the parts applied by $\dd$ are underlined.
+
+\begin{example}\label{exm:nand}
+Let us consider the translation rule
+  $\alpha~\<nand>~\beta ->_d \<not>~(\alpha~\<and>~\beta)$.
+
+This example showcases how $d^{*}$ works recursively. According to the definition, we need to compute $\ds{\<not>~(\alpha~\<and>~\beta)}$ first.
+\[ \inference{\boxed{?}}{\<not>~(\alpha~\<and>~\beta) \Da_S v} \]
+
+By the definition of $d^{*}$ and evaluation rules of $\<not>$, we have
+\begin{gather*}
+    d(\<not>~(\alpha~\<and>~\beta) \Da_S v) = \left\{
+        \begin{aligned}
+           & [ \alpha~\<and>~\beta \Da_S \<true>, v=\<false> ], \\
+           & [ \alpha~\<and>~\beta \Da_S \<false>, v=\<true> ]
+        \end{aligned}
+    \right\} \\[1em]
+    \inference{\inference{\boxed{?}}{\alpha~\<and>~\beta \Da_S \<true>}}{\<not>~(\alpha~\<and>~\beta) \Da_S \<false>} \quad
+    \inference{\inference{\boxed{?}}{\alpha~\<and>~\beta \Da_S \<false>}}{\<not>~(\alpha~\<and>~\beta) \Da_S \<true>} 
+\end{gather*}
+
+We focus on the derivation of the first case, omitting the second one.
+Recursively, we have
+\begin{gather*}
+    d(\alpha~\<and>~\beta \Da_S \<true>) = \left\{
+        \begin{aligned}
+           & [ \alpha \Da_S \<true>, \beta \Da_S \<true> ], \\
+           & [ \alpha \Da_S \<false>, \<false> = \<true> ]
+        \end{aligned}
+    \right\} \\[1em]
+    \inference{\inference{\alpha \Da_S \<true> & \beta \Da_S \<true>}{\alpha~\<and>~\beta \Da_S \<true>}}{\<not>~(\alpha~\<and>~\beta) \Da_S \<false>} \quad
+    \inference{\inference{\alpha \Da_S \<false> & \<false> = \<true>}{\alpha~\<and>~\beta \Da_S \<false>}}{\<not>~(\alpha~\<and>~\beta) \Da_S \<true>} 
+\end{gather*}
+
+Since the above premises all fit the form of \eqref{fm:ds1}, we can summarize the following conclusions:
+\[
+\ds{\<not>~(\alpha~\<and>~\beta) \Da_S v} = \left\{
+    \begin{aligned}
+       & [ \alpha \Da_S \<true>, \beta \Da_S \<true>, v=\<false> ], \\
+       & [ \alpha \Da_S \<false>, \<false> = \<true>, v=\<false> ], \\
+       & [ \alpha \Da_S \<true>, \beta \Da_S \<false>, v=\<true> ], \\
+       & [ \alpha \Da_S \<false>, v=\<true> ]
+    \end{aligned}
+\right\}
+\]
+
+By removing premises that cannot be satisfied, we can obtain the following evaluation rules:
+\[ 
+\inference{e_1\Da_S \<true> & \beta \Da_S \<true>}{e_1~\<nand>~e_2 \Da_S \<false>} \quad
+\inference{e_1\Da_S \<true> & \beta \Da_S \<false>}{e_1~\<nand>~e_2 \Da_S \<true>} \quad
+\inference{e_1\Da_S \<false>}{e_1~\<nand>~e_2 \Da_S \<true>}
+\]
+
+\end{example}
+
+\begin{example}\label{exm:orp}
+Let us consider the translation rule
+$\alpha~or'~\beta ->_d \<let>~x = \alpha~\<in>~\<if>~x~\<then>~x~\<else>~\beta$.
+
+This example demonstrates the role of hygiene in semantics lifting.
+Note that we assume that the translation is hygienic, i.e.,
+here $x$ is an arbitrary fresh variable and
+$x$ cannot be used in $\alpha$ or $\beta$.
+The evaluation rules of $or'$ is derived similarly {to Example \ref{exm:nand} as follows}.
+
+\begin{gather*}
+  d(\<let>~x = \alpha~\<in>~\<if>~x~\<then>~x~\<else>~\beta \Da_S v) = 
+  \{ [\alpha \Da_S v_1, [x\mapsto v_1](\<if>~x~\<then>~x~\<else>~\beta) \Da_S v ] \} \\[1em]
+  \inference{\alpha \Da_S v_1 & \inference{\boxed{?}}{[x\mapsto v_1](\<if>~x~\<then>~x~\<else>~\beta) \Da_S v} }{\<let>~x = \alpha~\<in>~\<if>~x~\<then>~x~\<else>~\beta \Da_S v}
+\end{gather*}
+
+The first judgement is already in the form \eqref{fm:1} so we only need to consider the second one, which contains a substitution.
+We apply the substitution first and then get the premises according to the evaluation rules of $\<if>$. {We have}
+
+\begin{align*}
+    & d([x\mapsto v_1](\<if>~x~\<then>~x~\<else>~\beta) \Da_S v) \\
+  =~& d(\<if>~v_1~\<then>~v_1~\<else>~[x\mapsto v_1]\beta \Da_S v) \\
+  =~& \left\{
+    \begin{aligned}
+       & [ v_1 = \<true>, v = \<true> ], \\
+       & [ v_1 = \<false>, [x\mapsto v_1]\beta \Da_S v ]
+    \end{aligned}
+\right\}
+\end{align*}
+\[
+\inference{v_1=\<true>}{[x\mapsto v_1](\<if>~x~\<then>~x~\<else>~\beta) \Da_S \<true>} \quad
+\inference{[x\mapsto v_1]\beta \Da_S v}{[x\mapsto v_1](\<if>~x~\<then>~x~\<else>~\beta) \Da_S v}
+\]  
+
+Therefore, we obtain the set of premises of evaluation rules for $or'$:
+\[ 
+\ds{\<let>~x = \alpha~\<in>~\<if>~x~\<then>~x~\<else>~\beta \Da_S v} = \left\{
+    \begin{aligned}
+       & [ \alpha \Da_S \<true>, v = \<true> ], \\
+       & [ \alpha \Da_S \<false>, [x\mapsto \<false>]\beta \Da_S v, x \text{ is fresh} ]
+    \end{aligned}
+\right\}
+\]
+The generated rule is correct. 
+But because there must be no $x$ in $\beta$, we can further simplify it to obtain the following evaluation rules:
+\[
+\inference{e_1 \Da_S \<true>}{e_1~or'~e_2 \Da_S \<true>} \quad
+\inference{e_1 \Da_S \<false> & e_2 \Da_S v}{e_1~or'~e_2 \Da_S v}
+\]
+\end{example}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Assumptions and Properties}
+\label{sec:properties}
+
+In this section, we present the assumptions being used in our framework. These assumptions are sufficient, in the sense that correctness and abstraction property of semantics lifting can be proved with them.
+Review that correctness is to show the relationship between the evaluation result of $e$ in DSL and the evaluation result of $\DS{e}$ in the host language, and abstraction is to guarantee that only language constructs of values and DSL can be mentioned in the derivation tree of DSL program. 
+
+Correctness is stated the same as Goal \ref{goal:1} given in Sec. \ref{sec:overview}.
+%And we only need to show the relationship between the evaluation of an expression $e$ and $\DS{e}$ in the mixed language.
+As for the abstraction property, we modify the statement given in Goal \ref{goal:2} slightly. We assume that there is a set $\mathcal{S}$ of language constructs that are allowed to appear in the evaluation derivation of the DSL. Intuitively, $\mathcal{S}$ represents language constructs that are understandable to the DSL user. Then all the language constructs of $\mathcal{S}$ should be included in DSL. By default, $\mathcal{S}$ is composed of values and DSL constructs. 
+Given the set of language constructs $\mathcal{S}$, in the semantics lifting, if the judgement has the form $e \Da_S v$ and all the language constructs in $e$ are elements of $\mathcal{S}$, we can let $d(e \Da_S v)$ be $\{[e \Da_S v]\}$ for such premise will not break the abstraction.
+
+We formalize the assumptions for meta-functions, host language, and translation rules in turn, and then prove correctness and abstraction in the end.
+
+\subsubsection{Meta-functions}
+
+The two assumptions about meta-functions are respectively for ensuring correctness and abstraction. Starting with correctness, we have explained that translation and meta-functions invocation should be commutable in Sec. \ref{sec:2-2}. In a language that includes side effects, this assumption can be formalized as follows:
+\begin{assumption}\label{asm:meta}
+For each meta-function $f$, $f$ satisfies: 
+\begin{align*}
+ & \text{If $f(e_1,\cdots,e_n) =>_S v$, then $f(\DS{e_1},\cdots,\DS{e_n}) =>_S \DS{v}$;} \\
+ & \text{If $f(\DS{e_1},\cdots,\DS{e_n}) =>_S v'$, then there exists $v$, s.t. $\DS{v}=v'$ and $f(e_1,\cdots,e_n) =>_S v$.}
+\end{align*}
+\qed
+\end{assumption}
+It requires that the meta-functions be semantically driven and not influenced by the syntactic structure of the arguments.
+All the meta-functions we use in \Func\ satisfy this property.
+
+% The assumption should also have a similar form for substitution.
+% We provide the definition of a meta-function that does not satisfy this assumption (although it may not be of practical use):
+% \[ evil(v)=\left\{\begin{aligned}
+%     & \<true> & & \text{if $v=\lambda x.~\<if>~e_1~\<then>~e_2~\<else>~e_3$} \\
+%     & \<false> & & \text{otherwise}
+% \end{aligned}\right.\]
+% The meta-function $evil$ is evil because $evil(\lambda x.~\<if>~x~\<then>~x~\<else>~\<false>)=\<true>$ but $evil(\lambda x.~x~\<and>~x)=\<false>$.
+
+Another assumption is related to the set $\mathcal{S}$ \appdiwchanged{of langauge constructs};
+\appdiwchanged{that is,} we can use local abstraction to justify global abstraction.
+If we invoke a meta-function with expressions of DSL, the output should be an expression of DSL as well.
+In other words, the meta-functions cannot generate any new language construct not in $\mathcal{S}$.
+% Considering that we use DSL expressions as arguments of a meta-function in mixed language,
+% new language constructs produced by the meta-function must be elements of set $\mathcal{S}$.
+% Language constructs of the output cannot exceed the union of the language constructs in the input expression and set $\mathcal{S}$.
+
+\begin{assumption}\label{asm:meta_abs}
+Given a set of language constructs $\mathcal{S}$ and expressions $e_1\cdots e_n$, 
+the language constructs of the return value $f(e_1\cdots e_n)$ are either from some $e_i$, or from set $\mathcal{S}$.
+\qed
+\end{assumption}
+
+\subsubsection{Host Language}
+
+In semantics lifting, the evaluation of compound expressions of the host language is expanded according to their evaluation rules. 
+Therefore, we require that no constructs of the host language can appear in the premises of the host language's evaluation rules. 
+More strictly speaking, we require that the {permitted} language constructs be elements of the set $\mathcal{S}$ that can appear in the DSL.
+% This is because we inevitably need to use the values of the host language in the value rules of the DSL.
+{Because} DSL constructs have not been introduced at this time, we define a subset {of $\mathcal{S}$} as $\mathcal{S}_h$, which mainly consists of constructs for values.
+
+\begin{assumption}\label{asm:host_abs}
+Given a set of language constructs $\mathcal{S}_h$, all the language constructs used in the premises of evaluation rules of host language should be in $\mathcal{S}_h$.
+\qed
+\end{assumption}
+
+From another perspective, any language construct in the host language that is used in the premises of the evaluation rules must appear in $\mathcal{S}$.
+For example, $\<fix>$ in \Func\ uses $\<fix>$ itself in the evaluation rule, 
+so the language construct $\<fix>$ must be an element of $\mathcal{S}_h$.
+In \Func, we define $\mathcal{S}_h$ as constructs of values and $\<fix>$.
+
+By design, it makes sense to include a language construct in $\mathcal{S}_h$ only if it is primitive and can be assumed to be understood by DSL users, like the fixed-point combinator. 
+Extending $\mathcal{S}_h$ to encompass all language constructs would make the above assumption and abstractness property trivial; thus, we should avoid the problem of such $\mathcal{S}_h$ being too large and confusing \appdiwchanged{due to} a not well-designed host-language definition. In some cases, we can avoid this situation by introducing more meta-functions. For example, we can introduce the meta-function $iteration$ to expand the fixed-point combinator several times (i.e., the maximum number allowed of recursion). Then the evaluation rule of fixed-point combinator can be expressed as follows:
+\[ \inference{e\Da_S \lambda x.~e' & \mathit{iteration}(\lambda x.~e')=>_S v}{\<fix>~e \Da_S v} \]
+
+\subsubsection{Translation Rules}
+
+Our assumption about translation rules is also intended to ensure abstraction. In Sec. \ref{sec:2-3}, we have shown that lambda abstraction containing host language constructs breaks abstraction in semantics lifting because of delayed evaluation. More generally, in the RHS of translation rules, any host-language construct that appears in the non-abstraction component of a host language construct may lead to abstraction leakage. Therefore, we propose the following assumption:
+
+\begin{assumption}\label{asm:tr_abs}
+Given a set of language constructs $\mathcal{S}$, if a host language construct $c$ is used in the RHS of definition,
+then the language constructs used in the non-abstract components of $c$ must be elements of $\mathcal{S}$.
+\qed
+\end{assumption}
+
+This is a sufficient but not necessary condition to ensure abstraction.
+For example, in the following translation rule, we use the host-language construct $\<if>$ in the non-abstract component of the lambda abstraction.
+\[ \<not>'~\alpha ->_d ((\lambda x.~\<if>~x~\<then>~\<false>~\<else>~\<true>)~\alpha)_V \]
+But since the lambda abstraction is used with application, which is essentially equivalent to $\<let>$, the body's evaluation is derived statically and therefore does not break the abstraction. Similarly, for a translation rule that contains a call-by-name application, abstraction leakage may not occur. For example, in the translation rule
+\[ \<not>''~\alpha ->_d ((\lambda x.~x)~(\<if>~\alpha~\<then>~\<false>~\<else>~\<true>))_N, \]
+the $\<if>$ \appdiwchanged{expression} is used in the non-abstract component of call-by-name application. However, since \appdiwchanged{the applied abstraction} is an expression without any meta-variable, all substitutions can be determined statically. % The evaluation of \appdiwchanged{the application argument} is delayed but in the translation rules.
+
+For those translation rules that do not satisfy this assumption, we can generalize the approach of lambda lifting introduced in Sec. \ref{sec:2-3}. The sub-expressions containing host-language constructs used in the non-abstract components of the translation rules are defined as new translation rules, and \appdiwchanged{then} the original sub-expressions are replaced by language constructs defined by these new translation rules. By pre-processing translation rules, it is ensured that the newly generated translation rules satisfy the above assumption. We do not discuss the transformation in detail here.
+
+
+\subsubsection{Main Theorem}
+
+Given these assumptions, \appdiwchanged{our semantics-lifting algorithm satisfies the following correctness and abstraction properties}.
+
+\begin{theorem}[Correctness]
+If assumption \ref{asm:meta} is satisfied, then
+\begin{align*}
+  & \text{Soundness: If $e \Da_S v$ holds in DSL, then $\DS{e}\Da_S \DS{v}$ holds in host language;} & \\
+  & \text{Completeness: If $\DS{e} \Da_S v'$ holds in host language, then exists $v$, s.t. $\DS{v}=v'$ and $e\Da_S v$.}
+\end{align*}
+\end{theorem}
+
+\appdiwchanged{We prove the two parts} by induction on the derivation of $e\Da_S v$ and $\DS{e}\Da_S v'$, respectively.
+%It can actually be seen as an exploration of the relationship between $j$ and $\DS{j}$, where assumption \ref{asm:meta} is a base case of it.
+
+% \begin{proof}
+
+% \textbf{Soundness:} 
+% % We will prove a more general proposition: 
+% % If $j$ holds in DSL, then $\DS{j}$ holds in host language.
+% Induct on the derivation proving that $e \Da_S v$. 
+% Then there exists a rule $r$ and a substitution $\sigma$, satisfying
+% \[ r=\inference{j_1\cdots j_n}{j} \;\text{and}\; e \Da_S v = \sigma(j). \]
+% Then,
+% \[ 
+% \begin{tabular}{lll}
+%       & $e \Da_S v$ & assumption \\
+%   iff & $\sigma(j)$ & equality \\
+%   implies & $\sigma(j_1) \cdots \sigma(j_n)$ & by evaluation rule $r$ \\
+%   implies & $\DS{\sigma(j_1)} \cdots \DS{\sigma(j_n)}$ & by inductive hypothesis and assumption \ref{asm:meta}
+% \end{tabular}
+% \] 
+
+% If $r$ is an evaluation rule from host language, $j_i = \DS{j_i}$ for $i \in [1..n]$.
+% Thus $\DS{\sigma(j_i)}=\DS{\sigma}(j_i)$ holds. Then,
+% \[ 
+% \begin{tabular}{lll}
+%       & $\DS{\sigma}(j_1) \ \cdots\ \DS{\sigma}(j_n)$ & \\
+%   implies & $\DS{\sigma}(j)$ & by evaluation rule $r$ \\
+%   implies & $\DS{e} \Da_S \DS{v}$ & equality
+% \end{tabular}
+% \] 
+
+% If $r$ is an evaluation rule derived from a translation rule, assume that the translation rule is defined as 
+% $c_n~\alpha_i\cdots \alpha_m ->_d e'$. Then,
+% \[ r = \inference{j_1\cdots j_n}{c_n~\alpha_i\cdots \alpha_m \Da_S v_0}. \]
+% According to the semantics lifting algorithm, we have $j_1 \cdots j_n \in \ds{e' \Da_S v_0}$.
+
+% \end{proof}
+
+\begin{theorem}[Abstraction]
+  Given a set of language constructs $\mathcal{S}$,
+  if assumptions \ref{asm:meta_abs}, \ref{asm:host_abs} and \ref{asm:tr_abs} are satisfied,
+  then globally, all the language constructs used in the derivation tree of a DSL program evaluation should be in $\mathcal{S}$, and locally, all the language constructs used in the derived evaluation rules are elements of $\mathcal{S}$.
+\end{theorem}
+
+Let $\inference{j_1\cdots j_n}{j}$ be a derived evaluation rule, 
+we aim to show that $j_1\cdots j_n$ do not mention language constructs of the host language.
+According to the termination condition of $d^{*}$, the derived judgments all have the form of (\ref{fm:ds1}), (\ref{fm:ds2}) and (\ref{fm:ds3}).
+So we only need to ensure that there are no such things in the substitution and arguments of meta-functions which break abstraction.
+If some meta-function call $f$ uses an expression with host language construct $c_h$ in a judgement,
+there are two possibilities.
+Consider the step of producing the meta-function \appdiwchanged{call} during the evaluation-rule derivation.
+If the applied host rule is like $\inference{... \quad f(c_h~...)=>_S v \quad ...}{c~... \Da_S v'}$,
+then such $c_h$ must be in $\mathcal{S}$ according to assumption \ref{asm:host_abs}.
+If the applied rule has shape $\inference{... \quad f(e)=>_S v \quad ...}{c~e~... \Da_S v'}$,
+and $e$ is substituted as an expression with $c_h$ in derivation, 
+since $e$ is a non-abstract component of $c~e~...$, 
+$c_h$ must be an element of $\mathcal{S}$ according to assumption \ref{asm:tr_abs}.
+\appdiwchanged{Therefore}, abstraction is guaranteed.

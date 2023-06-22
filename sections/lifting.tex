@@ -9,264 +9,264 @@ In the proofs, why structural rules are important will be explained.
 After that, the nonstructural parts, i.e. lambda abstraction and application, are discussed.
 Finally, we provide some extensions to further refine the algorithm and proofs.
 
-\subsection{Translation Rules}
+% \subsection{Translation Rules}
 
-% After defining a fully featured host language,
-%  translation rules are designed to specialize the language constructs of the DSL.
-% The difference between a translation rule and a macro is that it is not provided by the host language, 
-%  but is an abstraction outside the language.
-% The distinction between translation rules and syntactic sugar is that it not only simplifies the syntax, 
-%  but also can be used to describe more operations.
+% % After defining a fully featured host language,
+% %  translation rules are designed to specialize the language constructs of the DSL.
+% % The difference between a translation rule and a macro is that it is not provided by the host language, 
+% %  but is an abstraction outside the language.
+% % The distinction between translation rules and syntactic sugar is that it not only simplifies the syntax, 
+% %  but also can be used to describe more operations.
 
-A translation rule $tr$ defines a new constructor $c_n$, with shape 
-\[ c_n~\mexp_{x_1}\cdots \mexp_{x_n} => \mexp \]
- where free expression variables in $\mexp$ must appear in LHS.
-We use $LHS(tr)$ and $RHS(tr)$ to denote the expressions on either sides of $=>$.
-We call constructors defined by translation rules \textit{surface constructors}.
-% Each constructor has only one signature,
-Pattern-based translation rules or those with parameter lists are not allowed.
+% A translation rule $tr$ defines a new constructor $c_n$, with shape 
+% \[ c_n~\mexp_{x_1}\cdots \mexp_{x_n} => \mexp \]
+%  where free expression variables in $\mexp$ must appear in LHS.
+% We use $LHS(tr)$ and $RHS(tr)$ to denote the expressions on either sides of $=>$.
+% We call constructors defined by translation rules \textit{surface constructors}.
+% % Each constructor has only one signature,
+% Pattern-based translation rules or those with parameter lists are not allowed.
 
-\begin{requirement}\label{req:tr-unique}
-  Each surface constructor must be defined by a unique translation rule.
-\end{requirement}
+% \begin{requirement}\label{req:tr-unique}
+%   Each surface constructor must be defined by a unique translation rule.
+% \end{requirement}
 
-If a closed expression $\cexp$ is constructed by $c_n$,
- then there exists an environment $Σ$ satisfying $Σ(LHS(tr))=\cexp$,
- and $Σ(RHS(tr))$ is called \textit{one-step translation} (or desugaring), 
- written as $\ds{\cexp}$.
-\textit{Full translation} is also pretty useful,
- which translates expressions of surface constructors recursively.
-But if a rule translates surface constructor $c_n$ to itself, 
- i.e., a recursive translation rule,
- the full translation is not terminating.
-Therefore, we impose the following requirement.
+% If a closed expression $\cexp$ is constructed by $c_n$,
+%  then there exists an environment $Σ$ satisfying $Σ(LHS(tr))=\cexp$,
+%  and $Σ(RHS(tr))$ is called \textit{one-step translation} (or desugaring), 
+%  written as $\ds{\cexp}$.
+% \textit{Full translation} is also pretty useful,
+%  which translates expressions of surface constructors recursively.
+% But if a rule translates surface constructor $c_n$ to itself, 
+%  i.e., a recursive translation rule,
+%  the full translation is not terminating.
+% Therefore, we impose the following requirement.
 
-\begin{requirement}\label{req:no-recursion}
-For a translation rule $tr$, constructors in $RHS(tr)$ must be those of host language, or surface constructors defined earlier.
-\end{requirement}
+% \begin{requirement}\label{req:no-recursion}
+% For a translation rule $tr$, constructors in $RHS(tr)$ must be those of host language, or surface constructors defined earlier.
+% \end{requirement}
 
-Formally, full translation of a closed expression $\DS{\cexp}$ is defined as:
-\begin{align*}
-  \DS{\mexp_b} & = \mexp_b \\
-  \DS{c_n~\cexp_1\cdots \cexp_n} & = \DS{\ds{c_n~\cexp_1\cdots \cexp_n}} & \text{if $c_n$ is a surface constructor} \\
-  \DS{c_h~\cexp_1\cdots \cexp_n} & = c_h~\DS{\cexp_1}\cdots\DS{\cexp_n} & \text{if $c_h$ is a host constructor} 
-\end{align*}
+% Formally, full translation of a closed expression $\DS{\cexp}$ is defined as:
+% \begin{align*}
+%   \DS{\mexp_b} & = \mexp_b \\
+%   \DS{c_n~\cexp_1\cdots \cexp_n} & = \DS{\ds{c_n~\cexp_1\cdots \cexp_n}} & \text{if $c_n$ is a surface constructor} \\
+%   \DS{c_h~\cexp_1\cdots \cexp_n} & = c_h~\DS{\cexp_1}\cdots\DS{\cexp_n} & \text{if $c_h$ is a host constructor} 
+% \end{align*}
 
-For example, given an expression $\<true>~\<and>~(\<false>~\<or>~\<true>)$ of \textsc{Bool}, then:
-\begin{align*}
-  \ds{\<true>~\<and>~(\<false>~\<or>~\<true>)} & = 
-    \<if>~\<true>~(\<false>~\<or>~\<true>)~\<false> \\
-  \DS{\<true>~\<and>~(\<false>~\<or>~\<true>)} & = 
-    \<if>~\<true>~(\<if>~\<false>~\<true>~\<true>)~\<false>
-\end{align*}
+% For example, given an expression $\<true>~\<and>~(\<false>~\<or>~\<true>)$ of \textsc{Bool}, then:
+% \begin{align*}
+%   \ds{\<true>~\<and>~(\<false>~\<or>~\<true>)} & = 
+%     \<if>~\<true>~(\<false>~\<or>~\<true>)~\<false> \\
+%   \DS{\<true>~\<and>~(\<false>~\<or>~\<true>)} & = 
+%     \<if>~\<true>~(\<if>~\<false>~\<true>~\<true>)~\<false>
+% \end{align*}
 
-The full translation can be naturally extended to bones by fully translating all the expressions recursively.
-We use $\DB{b}$ to express the full translation on a bone and omit its formal definition.
+% The full translation can be naturally extended to bones by fully translating all the expressions recursively.
+% We use $\DB{b}$ to express the full translation on a bone and omit its formal definition.
 
-In addition, we assume that all the filters are commutable with the full translation.
-The filters we have used all satisfy this assumption.
+% In addition, we assume that all the filters are commutable with the full translation.
+% The filters we have used all satisfy this assumption.
 
-\begin{assumption}\label{asm:fun-ds}
-  \[
-    F(\mexp_1\cdots \mexp_n)\rr{X} v \quad\miff\quad F(\DS{\mexp_1}\cdots\DS{\mexp_n})\rr{X} \DS{v} \\
-  \]
-\end{assumption}
+% \begin{assumption}\label{asm:fun-ds}
+%   \[
+%     F(\mexp_1\cdots \mexp_n)\rr{X} v \quad\miff\quad F(\DS{\mexp_1}\cdots\DS{\mexp_n})\rr{X} \DS{v} \\
+%   \]
+% \end{assumption}
 
-Another assumption, requires that translations do not affect the success of pattern matching.
-This is a requirement for rules in the host language.
-For example, $\Let{λx\!:\!t.\<if>~e_1~e_2~\<false>}{\HH{e}} \cdots$ is not allowed.
-Because $λx\!:\!t.e_1~\<and>~e_2$ cannot match the above pattern.
-It is natural that pattern matching should only rely on the value of evaluation and not on the structure of expression itself.
+% Another assumption, requires that translations do not affect the success of pattern matching.
+% This is actually an assumption for rules in the host language.
+% For example, $\Let{λx\!:\!t.\<if>~e_1~e_2~\<false>}{\HH{e}} \cdots$ is not allowed.
+% Because $λx\!:\!t.e_1~\<and>~e_2$ cannot match the above pattern.
+% It is natural that pattern matching should only rely on the value of evaluation and not on the structure of expression itself.
 
-\begin{assumption}\label{asm:pat-ok}
-  Suppose $pat$ is a pattern used in a rule of language. Given $v$:
-  \begin{align*}
-    Σ=match(v,pat) \quad & \miff\quad Σ'=match(\DS{v},pat) \\[-2pt]
-                         & \text{and }\quad \forall \mexp_x \in dom(Σ),\DS{Σ(\mexp_x)}=Σ'(\mexp_x) \text{ and vice versa} \\
-    \text{FAIL}=match(v,pat) \quad & \miff\quad \text{FAIL}=match(\DS{v},pat)
-  \end{align*}
-\end{assumption}
+% \begin{assumption}\label{asm:pat-ok}
+%   Suppose $pat$ is a pattern used in a rule of language. Given $v$:
+%   \begin{align*}
+%     Σ=match(v,pat) \quad & \miff\quad Σ'=match(\DS{v},pat) \\[-2pt]
+%                          & \text{and }\quad \forall \mexp_x \in dom(Σ),\DS{Σ(\mexp_x)}=Σ'(\mexp_x) \text{ and vice versa} \\
+%     \text{FAIL}=match(v,pat) \quad & \miff\quad \text{FAIL}=match(\DS{v},pat)
+%   \end{align*}
+% \end{assumption}
 
-\paragraph{Variable Scope in Translation Rules}
+% \paragraph{Variable Scope in Translation Rules}
 
-Pombrio et al. \cite{infer-scope} provide a method to infer scope though syntactic sugar.
-They add restrictions to the syntactic sugar to keep the scope safe.
-We follow the conclusion:
+% Pombrio et al. \cite{infer-scope} provide a method to infer scope though syntactic sugar.
+% They add restrictions to the syntactic sugar to keep the scope safe.
+% We follow the conclusion:
 
-\begin{requirement}\label{req:close}
-  A translation rule must be \textit{closed}: 
-    any variable used in the RHS must be bound locally (by lambda abstraction or let binding).
-\end{requirement}
+% \begin{requirement}\label{req:close}
+%   A translation rule must be \textit{closed}: 
+%     any variable used in the RHS must be bound locally (by lambda abstraction or let binding).
+% \end{requirement}
 
-The requirement prohibits external variables capture.
-Also, locally bound variables must be explicitly parameterized for use in other parameters.
+% The requirement prohibits external variables capture.
+% Also, locally bound variables must be explicitly parameterized for use in other parameters.
 
-\begin{example}
-The definition of two translation rules and their sample programs are shown below:
-\[
-  \begin{array}{cl|cl}
-    % \text{Translation Rules} & & \text{Sample Programs} \\
-    \mathit{leaked}~e => \<let>~x:\<int> =1~\<in>~e
-    & \text{(\ding{51})}
-    & \mathit{leaked}~(x+1)
-    & \text{(\ding{55})} \\
-    \mathit{captured}~e => \<if>~x~\<true>~e
-    & \text{(\ding{55})}
-    & \<let>~x:\<bool> =\<true>~\<in>~\mathit{captured}~\<false>
-    & \text{(\ding{55})}
-  \end{array}
-\]
+% \begin{example}
+% The definition of two translation rules and their sample programs are shown below:
+% \[
+%   \begin{array}{cl|cl}
+%     % \text{Translation Rules} & & \text{Sample Programs} \\
+%     \mathit{leaked}~e => \<let>~x:\<int> =1~\<in>~e
+%     & \text{(\ding{51})}
+%     & \mathit{leaked}~(x+1)
+%     & \text{(\ding{55})} \\
+%     \mathit{captured}~e => \<if>~x~\<true>~e
+%     & \text{(\ding{55})}
+%     & \<let>~x:\<bool> =\<true>~\<in>~\mathit{captured}~\<false>
+%     & \text{(\ding{55})}
+%   \end{array}
+% \]
 
-The $\mathit{leaked}$ tries to bind a constant in $x$ for use in $e$.
-But $x$ referenced in $e$ is not allowed.
-Thus the translation rule is actually premitted,
- but $x$ is not in scope of $e$.
-As a comparison, the following definition is compliant:
-\[ \mathit{leaked}'~x~e => \<let>~x:\<int> =1~\<in>~e \]
-The $\mathit{captured}$ attempts to get the value of $x$ in the current environment,
- which may produce unbound identifiers after translation.
-The translation rule itself is not allowed.
-\end{example}
+% The $\mathit{leaked}$ tries to bind a constant in $x$ for use in $e$.
+% But $x$ referenced in $e$ is not allowed.
+% Thus the translation rule is actually premitted,
+%  but $x$ is not in scope of $e$.
+% As a comparison, the following definition is compliant:
+% \[ \mathit{leaked}'~x~e => \<let>~x:\<int> =1~\<in>~e \]
+% The $\mathit{captured}$ attempts to get the value of $x$ in the current environment,
+%  which may produce unbound identifiers after translation.
+% The translation rule itself is not allowed.
+% \end{example}
 
-% Taking all these considerations into account, we give the following requirements.
+% % Taking all these considerations into account, we give the following requirements.
 
-\subsubsection{Hygiene}
+% \subsubsection{Hygiene}
 
-Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
-  variable bindings are possibly hidden by macros, and vice versa.
-For example, we define a translation rule $or'$ via $\<let>$:
-\[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
- where $``x"$ is a literal identifier. 
-Then the expression $\<let>~x:\<bool> =\<false>~\<in>~(\<true>~or'~x)$ will be fully translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
+% Programming languages with non-hygienic macro systems may cause the hygiene problem\cite{hygine}:
+%   variable bindings are possibly hidden by macros, and vice versa.
+% For example, we define a translation rule $or'$ via $\<let>$:
+% \[ e_1~or'~e_2 => \<let>~x:\<bool> =e_1~\<in>~\<if>~x~x~e_2 \]
+%  where $``x"$ is a literal identifier. 
+% Then the expression $\<let>~x:\<bool> =\<false>~\<in>~(\<true>~or'~x)$ will be fully translated into $\<let>~x=\<false>~\<in>~\<let>~x=\<true>~\<in>~\<if>~x~x~x$, causing an error.
 
-The closed translation rules ensure no unbound identifier exceptions \cite{infer-scope}.
-Therefore, we can modify the names of variables safely just like $\alpha$--equivalence.
+% The closed translation rules ensure no unbound identifier exceptions \cite{infer-scope}.
+% Therefore, we can modify the names of variables safely just like $\alpha$--equivalence.
 
-\begin{assumption}
-  We treat literals variables bound in the RHS as mutable and always fresh.
-  And the translation is always hygienic.
-\end{assumption}
+% \begin{assumption}
+%   We treat literals variables bound in the RHS as mutable and always fresh.
+%   And the translation is always hygienic.
+% \end{assumption}
 
-% We use $\texttt{@}$ to denote fresh variables, and $or'$ will be written as:
-% \[ e_1~or'~e_2 => \<let>~\texttt{@x}=e_1~\<in>~\<if>~\texttt{@x}~\texttt{@x}~e_2. \]
+% % We use $\texttt{@}$ to denote fresh variables, and $or'$ will be written as:
+% % \[ e_1~or'~e_2 => \<let>~\texttt{@x}=e_1~\<in>~\<if>~\texttt{@x}~\texttt{@x}~e_2. \]
 
-% \subsubsection{Substitution Rules}
+% % \subsubsection{Substitution Rules}
 
-For each language construct defined by a translation rule,
- the developer needs to define substitution rules for it,
- just like those of the host language.
- In fact, the substitution rule should be automated by the derivation of the scope.
-% The set of substitution rules in DSL $R'_{subst}$ is a union of the substitution rules of the host language $R_{subst}$ and these newly defined substitution rules.
-% Since substitution is a pure meta-function, the assumption \ref{asm:fun-ds} should be satisfied in DSL.
-% Intuitively, substitution and full translation are commutable.
-% Deriving substitution rules automatically is our future work.
+% For each language construct defined by a translation rule,
+%  the developer needs to define substitution rules for it,
+%  just like those of the host language.
+%  In fact, the substitution rule should be automated by the derivation of the scope.
+% % The set of substitution rules in DSL $R'_{subst}$ is a union of the substitution rules of the host language $R_{subst}$ and these newly defined substitution rules.
+% % Since substitution is a pure meta-function, the assumption \ref{asm:fun-ds} should be satisfied in DSL.
+% % Intuitively, substitution and full translation are commutable.
+% % Deriving substitution rules automatically is our future work.
 
-\subsection{Semantics Lifting}
+% \subsection{Semantics Lifting}
 
-% In order for the DSL to support new language constructs defined by translation rules, 
-%  it is necessary to provide their evaluation rules and type rules.
-% In this section, a generic algorithm will be presented, 
-%  to illustrate how to derive the rules for translation rules.
-% For a DSL defined by multiple translation rules, 
-%  we derive the evaluation and typing rules and add them to the language individually.
+% % In order for the DSL to support new language constructs defined by translation rules, 
+% %  it is necessary to provide their evaluation rules and type rules.
+% % In this section, a generic algorithm will be presented, 
+% %  to illustrate how to derive the rules for translation rules.
+% % For a DSL defined by multiple translation rules, 
+% %  we derive the evaluation and typing rules and add them to the language individually.
 
-% And now we will give the algorithm of semantics derivation. 
-Suppose a host language $L$ based on \STLC{}. % is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
-%  where $S_p=\{\Exp,\Type\}$.
-We now have a set of translation rules to define DSL.
-Due to requirement \ref{req:no-recursion},
- we can simplify the problem to process one translation rule one by one.
-% And the language which supports the new language constructs is used as a new host language,
-%  to derive evaluation rules for other translation rules.
-Suppose the translation rule $tr$ has shape $c_n~exp_1\cdots exp_n => e$,
- and $sort(c_n)=\Exp$.
-% Our goal is to get the definition of new language $L'=\langle S_p, C', R'_{\mE}, R'_{\mT}, R'_{subst}, F\rangle$,
-%  which supports the new language construct $c_n$.
-% The definitions of $C'$ and $R_{subst}$ are obvious.
-% We need to define the evaluation and typing rule for $c_n$.
-% By the method proposed by \cite{infer-types}, the typing rule is obtained.
-% In the following, we will talk about how to derive the evaluation rule.
-We aim to get the evaluation rule of $c_n$.
+% % And now we will give the algorithm of semantics derivation. 
+% Suppose a host language $L$ based on \STLC{}. % is defined as $L=\langle S_p, C, R_{\mE}, R_{\mT}, R_{subst}, F\rangle$,
+% %  where $S_p=\{\Exp,\Type\}$.
+% We now have a set of translation rules to define DSL.
+% Due to requirement \ref{req:no-recursion},
+%  we can simplify the problem to process one translation rule one by one.
+% % And the language which supports the new language constructs is used as a new host language,
+% %  to derive evaluation rules for other translation rules.
+% Suppose the translation rule $tr$ has shape $c_n~exp_1\cdots exp_n => e$,
+%  and $sort(c_n)=\Exp$.
+% % Our goal is to get the definition of new language $L'=\langle S_p, C', R'_{\mE}, R'_{\mT}, R'_{subst}, F\rangle$,
+% %  which supports the new language construct $c_n$.
+% % The definitions of $C'$ and $R_{subst}$ are obvious.
+% % We need to define the evaluation and typing rule for $c_n$.
+% % By the method proposed by \cite{infer-types}, the typing rule is obtained.
+% % In the following, we will talk about how to derive the evaluation rule.
+% We aim to get the evaluation rule of $c_n$.
 
-The core idea of the semantics derivation has been shown in overview:
- expand evaluation of compound expressions recursively according to the rules in $R_{\mE}$
- until all the evaluation are unexpandable.
-Formally, $\ctr{Name}{LHS(tr)}=\dd(\HH{RSH(tr)})$, the definition of $\dd$ is shown in Fig. \ref{fig:sd}.
-Note that here we skip the transformation of expressions containing substitutions for now.
+% The core idea of the semantics derivation has been shown in overview:
+%  expand evaluation of compound expressions recursively according to the rules in $R_{\mE}$
+%  until all the evaluation are unexpandable.
+% Formally, $\ctr{Name}{LHS(tr)}=\dd(\HH{RSH(tr)})$, the definition of $\dd$ is shown in Fig. \ref{fig:sd}.
+% Note that here we skip the transformation of expressions containing substitutions for now.
 
-\begin{figure}
-  $\ctr{Name}{c_n~exp_1\cdots exp_n}=\dd(\HH{e})$
-  \begin{align}
-    \noalign{\raggedright \hspace{2em} \bf Bone:}
-    \dd(b:(br_1\cdots br_n)) & = \dd(b):(\dd(br_1)\cdots \dd(br_n)) \\
-    \dd(\Let{pat}{b_1} b_2) & = \Let{pat}{\dd(b_1)} \dd(b_2) \\
-    \dd(\HH{\mexp_x}) & = \HH{\mexp_x} \\  
-    \dd(\HH{\mexp_b}) & = \HH{\mexp_b} \\
-    \hspace{8em} \dd(\HH{c_h~\mexp_1\cdots \mexp_m}) 
-      & = \dd(Σ(b)) \hspace{20pt} \text{if there exists $Σ$ and $\ctr{C}{\mexp}\cqq b$ in $L$,} \\
-      & \hspace{61pt} \text{such that $Σ(\mexp)=c_h~\mexp_1\cdots \mexp_m$} \nonumber \\
-    \dd(\HH{\mexp[\mexp'/x]}) & = \HH{\mexp[\mexp'/x]} \\
-    % \dd(\EE{f_p(\mexp_1'\cdots \mexp_n')}) & = \EE{f_p(\mexp_1'\cdots \mexp_n')} \\
-    \dd(F(\mexp_1\cdots \mexp_n)) & = F(\mexp_1\cdots \mexp_n) \\
-    \noalign{\raggedright \hspace{2em} \bf Expression:}
-    \dd(\mexp) & = \mexp \\
-    \noalign{\raggedright \hspace{2em} \bf Branch:}
-    \dd(pat |> b) & = pat |> \dd(b)
-    % \dd(pat \mid \mexp' |> b) & = pat \mid \mexp' |> \dd(b)
-  \end{align}
-  \caption{Semantic Derivation}
-  \label{fig:sd}
-\end{figure}
+% \begin{figure}
+%   $\ctr{Name}{c_n~exp_1\cdots exp_n}=\dd(\HH{e})$
+%   \begin{align}
+%     \noalign{\raggedright \hspace{2em} \bf Bone:}
+%     \dd(b:(br_1\cdots br_n)) & = \dd(b):(\dd(br_1)\cdots \dd(br_n)) \\
+%     \dd(\Let{pat}{b_1} b_2) & = \Let{pat}{\dd(b_1)} \dd(b_2) \\
+%     \dd(\HH{\mexp_x}) & = \HH{\mexp_x} \\  
+%     \dd(\HH{\mexp_b}) & = \HH{\mexp_b} \\
+%     \hspace{8em} \dd(\HH{c_h~\mexp_1\cdots \mexp_m}) 
+%       & = \dd(Σ(b)) \hspace{20pt} \text{if there exists $Σ$ and $\ctr{C}{\mexp}\cqq b$ in $L$,} \\
+%       & \hspace{61pt} \text{such that $Σ(\mexp)=c_h~\mexp_1\cdots \mexp_m$} \nonumber \\
+%     \dd(\HH{\mexp[\mexp'/x]}) & = \HH{\mexp[\mexp'/x]} \\
+%     % \dd(\EE{f_p(\mexp_1'\cdots \mexp_n')}) & = \EE{f_p(\mexp_1'\cdots \mexp_n')} \\
+%     \dd(F(\mexp_1\cdots \mexp_n)) & = F(\mexp_1\cdots \mexp_n) \\
+%     \noalign{\raggedright \hspace{2em} \bf Expression:}
+%     \dd(\mexp) & = \mexp \\
+%     \noalign{\raggedright \hspace{2em} \bf Branch:}
+%     \dd(pat |> b) & = pat |> \dd(b)
+%     % \dd(pat \mid \mexp' |> b) & = pat \mid \mexp' |> \dd(b)
+%   \end{align}
+%   \caption{Semantic Derivation}
+%   \label{fig:sd}
+% \end{figure}
 
-To illustrate the algorithm, some examples will be presented.
-Example \ref{exm:nand} defines $\<nand>$ by $\<not>$ and $\<and>$.
-Assume that the evaluation rules of $\<not>$ and $\<and>$ have been derived earlier.
-We observe that how $\dd$ works recursively.
-For clarity, the parts applied by $\dd$ are underlined.
+% To illustrate the algorithm, some examples will be presented.
+% Example \ref{exm:nand} defines $\<nand>$ by $\<not>$ and $\<and>$.
+% Assume that the evaluation rules of $\<not>$ and $\<and>$ have been derived earlier.
+% We observe that how $\dd$ works recursively.
+% For clarity, the parts applied by $\dd$ are underlined.
 
-\begin{example}\label{exm:nand}
-  $e_1~\<nand>~e_2 => \<not>~(e_1~\<and>~e_2)$:
-  \begin{align*}
-       & \ctr{Nand}{e_1~\<nand>~e_2} \\
-    =~ & \dhl{\HH{\<not>~(e_1~\<and>~e_2)}} \\
-    =~ & \dhl{\HH{e_1~\<and>~e_2}
-            :\branch{\<true>|>\<false> \\& \<false>|>\<true>}} \\
-    =~ & \dhl{\HH{e_1~\<and>~e_2}}
-            :\branch{\<true>|>\dhl{\<false>} \\& \<false>|>\dhl{\<true>}} \\
-    =~ & \dhl{\HH{e_1}
-            :\branch{\<true>|>\HH{e_2} \\& \<false>|>\<false>}
-           }:\branch{\<true>|>\<false> \\& \<false>|>\<true>} \\
-    =~ & \HH{e_1}
-          :\branch{\<true>|>\HH{e_2} \\& \<false>|>\<false>}
-          :\branch{\<true>|>\<false> \\& \<false>|>\<true>} 
-  \end{align*}  
-\end{example}
+% \begin{example}\label{exm:nand}
+%   $e_1~\<nand>~e_2 => \<not>~(e_1~\<and>~e_2)$:
+%   \begin{align*}
+%        & \ctr{Nand}{e_1~\<nand>~e_2} \\
+%     =~ & \dhl{\HH{\<not>~(e_1~\<and>~e_2)}} \\
+%     =~ & \dhl{\HH{e_1~\<and>~e_2}
+%             :\branch{\<true>|>\<false> \\& \<false>|>\<true>}} \\
+%     =~ & \dhl{\HH{e_1~\<and>~e_2}}
+%             :\branch{\<true>|>\dhl{\<false>} \\& \<false>|>\dhl{\<true>}} \\
+%     =~ & \dhl{\HH{e_1}
+%             :\branch{\<true>|>\HH{e_2} \\& \<false>|>\<false>}
+%            }:\branch{\<true>|>\<false> \\& \<false>|>\<true>} \\
+%     =~ & \HH{e_1}
+%           :\branch{\<true>|>\HH{e_2} \\& \<false>|>\<false>}
+%           :\branch{\<true>|>\<false> \\& \<false>|>\<true>} 
+%   \end{align*}  
+% \end{example}
 
-We pick up the $\<let>$ defined in introduction as the second example.
-% The language construct $\<let>$ is a common syntactic sugar, defined by lambda abstraction and application.
-% Considering $\<let>$ as a translation rule, 
-Example \ref{exm:let} presents the derivation of its evaluation rule.
-% Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda lifting.
-The last step is simplification, since that both left and right sides are constructed by $λ$.
-Simplification is sometimes useful for abstraction property, for instance in this example,
- where the evaluation rule of $\<let>$ no longer depends on lambda abstraction (even if this is allowed).
-% In addition, substituion, as a meta-function, appears in the following derivation, which does not affect the expansion.
-% In \todo{}, we will discuss substituion more deeply.
+% We pick up the $\<let>$ defined in introduction as the second example.
+% % The language construct $\<let>$ is a common syntactic sugar, defined by lambda abstraction and application.
+% % Considering $\<let>$ as a translation rule, 
+% Example \ref{exm:let} presents the derivation of its evaluation rule.
+% % Note that the RHS of the translation rule satisfies \ref{ll:let}, and no language constructs will be generated in lambda lifting.
+% The last step is simplification, since that both left and right sides are constructed by $λ$.
+% Simplification is sometimes useful for abstraction property, for instance in this example,
+%  where the evaluation rule of $\<let>$ no longer depends on lambda abstraction (even if this is allowed).
+% % In addition, substituion, as a meta-function, appears in the following derivation, which does not affect the expansion.
+% % In \todo{}, we will discuss substituion more deeply.
 
-\begin{example}
-  $\<let>~x:t=e_1~\<in>~e_2 => (λx\!:\!t.e_2)~e_1$:
-  \begin{align*}
-       & \ctr{Let}{\<let>~x:t=e_1~\<in>~e_2} \\
-    =~ & \dhl{\HH{(λx\!:\!t.e_2)~e_1}}  \\
-    =~ & \dhl{\Let{λx':t'.e}{\HH{λx\!:\!t.e_2}} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']}} \\
-    =~ & \Let{λx':t'.e}{\dhl{\HH{λx\!:\!t.e_2}}} \dhl{\Let{v_1}{\HH{e_1}} \EE{e[v_1/x']}} \\
-    =~ & \Let{λx':t'.e}{λx\!:\!t.e_2} \Let{v_1}{\dhl{\HH{e_1}}} \dhl{\HH{e[v_1/x']}} \\
-    =~ & \Let{λx':t'.e}{λx\!:\!t.e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
-    =~ & \Let{x'}{x} \Let{t'}{t} \Let{e}{e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
-    =~ & \Let{v_1}{\HH{e_1}} \HH{e_2[v_1/x]}
-  \end{align*}
-  \label{exm:let}
-\end{example}
+% \begin{example}
+%   $\<let>~x:t=e_1~\<in>~e_2 => (λx\!:\!t.e_2)~e_1$:
+%   \begin{align*}
+%        & \ctr{Let}{\<let>~x:t=e_1~\<in>~e_2} \\
+%     =~ & \dhl{\HH{(λx\!:\!t.e_2)~e_1}}  \\
+%     =~ & \dhl{\Let{λx':t'.e}{\HH{λx\!:\!t.e_2}} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']}} \\
+%     =~ & \Let{λx':t'.e}{\dhl{\HH{λx\!:\!t.e_2}}} \dhl{\Let{v_1}{\HH{e_1}} \EE{e[v_1/x']}} \\
+%     =~ & \Let{λx':t'.e}{λx\!:\!t.e_2} \Let{v_1}{\dhl{\HH{e_1}}} \dhl{\HH{e[v_1/x']}} \\
+%     =~ & \Let{λx':t'.e}{λx\!:\!t.e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
+%     =~ & \Let{x'}{x} \Let{t'}{t} \Let{e}{e_2} \Let{v_1}{\HH{e_1}} \HH{e[v_1/x']} \\
+%     =~ & \Let{v_1}{\HH{e_1}} \HH{e_2[v_1/x]}
+%   \end{align*}
+%   \label{exm:let}
+% \end{example}
 
 \subsection{Properties}
 
@@ -306,7 +306,7 @@ These lemmas describe the properties of $\dd$ on closed bones,
 \end{lemma}
 
 Before the proof of correctness, we give a stronger lemma,
- of which correctness theorem is an special case.
+ of which the correctness theorem is a special case.
 
 \begin{lemma}\label{lemma:b-db}
   Support $\cb$ is a closed bone. Then:
@@ -315,11 +315,11 @@ Before the proof of correctness, we give a stronger lemma,
 
 \begin{proof}
   By induction on a derivation of $\cb \rr{X} v$. 
-  The \textsc{Expression} case are obvious.
+  The \textsc{Expression} case is obvious.
 
   Case \textsc{Filter}: by assumption \ref{asm:fun-ds}. 
   
-  Case \textsc{Hook}: suppose that $b=\EE{e}$. There are two cases should be considered.
+  Case \textsc{Hook}: suppose that $b=\EE{e}$. There are two cases that should be considered.
   \begin{itemize}    
     \item $e=c_n~\cexp_1\cdots \cexp_n$ where $c_n$ is a surface constructor defined by $c_n~\mexp_{x_1}\cdots \mexp_{x_n}=>\mexp$.
       Then $\EE{c_n~\cexp_1\cdots \cexp_n} \rr{X} v$ iff $L'[c_n~\mexp_1\cdots \mexp_n]\rr{X} v$.
@@ -439,7 +439,7 @@ By default, $C_p$ consists of constructors of sort $\Val$ or $\Type$ in host lan
 
 \subsection{Preprocessing: Lambda Lifting}
 
-We have already examplified how lambda abstractions break the abstraction property in semantics lifting.
+We have already exemplified how lambda abstractions break the abstraction property in semantics lifting.
 The solution to this problem is to expose the body of lambda abstractions in the translation rules 
  and define them as new language constructs of the DSL.
 We do this before the semantics lifting.
@@ -504,7 +504,7 @@ To address the abstraction of derivation rules that include substitution, we fin
   & \HH{λx\!:\!t.e_1} & x=y \\
   & \HH{λx\!:\!t.e_1[e_2/y]} & \text{otherwise}
 \end{aligned} \right. \]
-To describe behaviour with conditions, we simply extend our meta-language with \textit{guard} (side-condition) in pattern matching.
+To describe behavior with conditions, we simply extend our meta-language with \textit{guard} (side-condition) in pattern matching.
 For example, the above equation can be expressed as:
 \[ \HH{(λx\!:\!t.e_1)[e_2/y]} = ():\branch{
     \_ \mid x=y |> \HH{λx\!:\!t.e_1} \\&
@@ -516,13 +516,13 @@ where the pattern matching here is just used to find a branch satisfying conditi
 %  expand the evaluation containing substitution statically in semantics lifting.
 %  The transformation is correct (the CLOSED requirement is important). 
 % The abstraction holds since the expressions used for substitution in application are values.
-We use the following rule to replace the origin rule of evaluation with substituion in $\dd$:
+We use the following rule to replace the origin rule of evaluation with substitution in $\dd$:
 \[ \dd(\HH{(c~\mexp_1\cdots\mexp_n)[v/x]}) = ():\branch{
       \_ \mid cond_1 |> \dd(\HH{Σ(\mexp_1')}) \\&
       \cdots \\&
       \_ \mid cond_m |> \dd(\HH{Σ(\mexp_m')}) \\  
 } \]
-where the substituion rule of $c$ is:
+where the substitution rule of $c$ is:
 \[ (c~\mexp_{x_1}\cdots\mexp_{x_n})[v/x] = \left\{ \begin{aligned}
       & \mexp_1' & cond_1 \text{ satisfies} \\
       & \cdots \\
@@ -581,7 +581,7 @@ These extensions may result in abstraction not being guaranteed.
 
 \paragraph{Substitution with non-value expression}
 
-In general, the expressions to substitute are values.
+In general, the expressions to substitution are values.
 This holds for both application and let binding.
 In the above strategy, we require the substitution rule to be applied in the valuation.
 However, if the expression used for substitution is not a value,
@@ -593,14 +593,14 @@ We discuss fixpoint more extensively in Section \ref{sec:fix}.
 \paragraph{Recursive Translation Rules}
 
 Requirement \ref{req:no-recursion} specifies that the translation rule cannot be defined with language construct of itself,
- otherwise the expression cannot be fully translated.
-However this is feasible for translation one step at a time. 
+ otherwise, the expression cannot be fully translated.
+However, this is feasible for translation one step at a time. 
 This method is called lazy desugaring \cite{lazy-desg}.
 Another problem then is how to recursively expand the rules in semantics lifting.
 In fact, we cannot find such a solution.
 Consider that the new language construct $c_n$ itself is a DSL construct.
-We can think of it as satisfying abstraction.
-We add the fllowing rule to $\dd$:
+We can think of it as a satisfying abstraction.
+We add the following rule to $\dd$:
 \[ \dd(\HH{c_n~\mexp_1\cdots \mexp_n}) = \HH{c_n~\mexp_1\cdots \mexp_n} \]
 
 But only the language construct of its definition itself satisfies the abstraction,

@@ -1,19 +1,20 @@
 \begin{tikzpicture}[x=6pt,y=3pt,yscale=1,xscale=1]
 %uncomment if require: \path (0,300); %set diagram left start at 0, and has height of 300
 
-\node (STLC) at (0,3) {\textsc{Stlc} };
-\node (Bool) at (0,20) {\textsc{Bool} };
+\node (STLC) at (-2,10) {\textsc{Stlc} };
+\node (Bool) at (-2,20) {\textsc{Bool} };
 \node (Boolp) at (10,20) {\textsc{Bool}$_\text{pair}$};
 \node (Adder) at (10,30) {\textsc{Adder} };
 \node (STLCex) at (10,10) {\textsc{Stlc}$_\text{ex}$};
-\node (Ref) at (22,10) {\textsc{Ref} };
+\node (Ref) at (22,10) {\textsc{Func} };
 \node (Imp) at (22,20) {\textsc{Imp} };
 \node (Robot) at (22,30) {\textsc{Robot} };
 
 \draw[->] (STLC) -> node[right] {\small tr} (Bool); 
-\draw[->] (Bool) -> node[below] {\small meta-ex} (Boolp); 
-\draw[->] (STLC) -- node[below] {\small meta-ex} (STLC-|STLCex) 
-  -> node[right] {\small tr} (STLCex);
+\draw[->] (Bool) -> node[below] {\small pr ex} (Boolp);
+\draw[->] (STLC) -> node[below] {\small pr ex} (STLCex);
+% \draw[->] (STLC) -- node[below] {\small pr ex} (STLC-|STLCex) 
+%  -> node[right] {\small tr} (STLCex);
 \draw[->] (STLCex) -> node[below] {\small monad ex} (Ref); 
 %\draw[->] (Ref) -> node[below] {\small monad ex (IO)} (RefIo);
 \draw[->] (Ref) -> node[right] {\small tr} (Imp); 
